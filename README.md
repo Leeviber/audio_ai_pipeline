@@ -35,11 +35,39 @@
 
 {3/1/0.21}. 意味着这一秒的speaker id 为3,是否第一次出现为是，过去60秒的说话概率为0.21。 
 
-{0/0/0}. ID 0 代表给当前这一秒没有人说话，是基于VAD判断的。
+{0/0/0}. ID 0 代表给当前这一秒没有人说话，是基于VAD判断的。  
 
+
+# 模型文件
+
+此处的模型及参数需要从hugging face 上克隆到本地并存放在bin文件夹下
+
+ 
+在开始之前，请确保已安装 [git-lfs](https://git-lfs.com)。
+
+## 安装
+
+使用以下命令克隆项目：
+
+```shell
+git clone https://huggingface.co/vibeus/sherpa-onnx-int8
+```
+
+sherpa-onnx-int8文件夹内的所有二进制文件或模型文件为模型所需，请安装到板子合适位置
+
+某些模型文件较大，请使用git lfs
+
+```shell
+git lfs install
+GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/vibeus/sherpa-onnx-int8
+git lfs pull
+```
+
+ 
+ 
 ## Demo
 
-该项目包含两个完整的示例流程：
+该项目包含的示例流程：
 
 1. `kws_stt_online.cc`：将关键词唤醒（KWS）和语音到文字转录（STT）绑定的演示程序。
 2. `vad_stt_online.cc`：将活跃说话检测（VAD）和语音到文字转录（STT）绑定的演示程序。
