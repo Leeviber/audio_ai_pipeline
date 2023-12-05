@@ -1,0 +1,7 @@
+.vscode
+build*/
+bin/
+Downloads/
+feat_npy/
+feature_bin/
+zh_model/

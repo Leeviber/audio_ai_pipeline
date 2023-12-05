@@ -1,0 +1,67 @@
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+project(stt-demo)
+
+# "The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+#  not set.
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
+option(SHERPA_ONNX_ENABLE_PYTHON "Whether to build Python" OFF)
+option(SHERPA_ONNX_ENABLE_TESTS "Whether to build tests" OFF)
+option(SHERPA_ONNX_ENABLE_CHECK "Whether to build with assert" OFF)
+option(BUILD_SHARED_LIBS "Whether to build shared libraries" OFF)
+option(SHERPA_ONNX_ENABLE_PORTAUDIO "Whether to build with portaudio" ON)
+option(SHERPA_ONNX_ENABLE_JNI "Whether to build JNI internface" OFF)
+option(SHERPA_ONNX_ENABLE_C_API "Whether to build C API" ON)
+option(SHERPA_ONNX_ENABLE_WEBSOCKET "Whether to build webscoket server/client" ON)
+option(SHERPA_ONNX_ENABLE_GPU "Enable ONNX Runtime GPU support" OFF)
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(BUILD_RPATH_USE_ORIGIN TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+set(SHERPA_ONNX_RPATH_ORIGIN "$ORIGIN")
+
+
+set(CMAKE_INSTALL_RPATH ${SHERPA_ONNX_RPATH_ORIGIN})
+set(CMAKE_BUILD_RPATH ${SHERPA_ONNX_RPATH_ORIGIN})
+
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "No CMAKE_BUILD_TYPE given, default to Release")
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS}")
+message(STATUS "SHERPA_ONNX_ENABLE_PYTHON ${SHERPA_ONNX_ENABLE_PYTHON}")
+message(STATUS "SHERPA_ONNX_ENABLE_TESTS ${SHERPA_ONNX_ENABLE_TESTS}")
+message(STATUS "SHERPA_ONNX_ENABLE_CHECK ${SHERPA_ONNX_ENABLE_CHECK}")
+message(STATUS "SHERPA_ONNX_ENABLE_PORTAUDIO ${SHERPA_ONNX_ENABLE_PORTAUDIO}")
+message(STATUS "SHERPA_ONNX_ENABLE_JNI ${SHERPA_ONNX_ENABLE_JNI}")
+message(STATUS "SHERPA_ONNX_ENABLE_C_API ${SHERPA_ONNX_ENABLE_C_API}")
+message(STATUS "SHERPA_ONNX_ENABLE_WEBSOCKET ${SHERPA_ONNX_ENABLE_WEBSOCKET}")
+message(STATUS "SHERPA_ONNX_ENABLE_GPU ${SHERPA_ONNX_ENABLE_GPU}")
+
+set(CMAKE_CXX_STANDARD 14 CACHE STRING "The C++ version to be used.")
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(CheckIncludeFileCXX)
+check_include_file_cxx(alsa/asoundlib.h SHERPA_ONNX_HAS_ALSA)
+check_include_file_cxx(cxxabi.h SHERPA_ONNX_HAVE_CXXABI_H)
+ 
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+include(kaldi-native-fbank)
+include(onnxruntime)
+include(sentencepiece)
+
+
+add_subdirectory(src)
