@@ -83,7 +83,6 @@ public:
         {
             matchedInfo.is_first = false;
             matchedInfo.matched_id = matched_idx;
-
             if (id_tracker[matched_idx].size() < 50)
             {
                 id_tracker[matched_idx].push_back(current_embs);
@@ -109,6 +108,7 @@ public:
             // When the embedding size is less than three and the attention ratio in the past minute is below 0.2, filter it out
             if (it->second.size() < 3 && idanalyzer.getIDRatio(it->first) < 0.2)
             {
+                it->second.clear();
                 it = id_tracker.erase(it);
             }
             else
@@ -169,7 +169,7 @@ int main()
         return -1;
     }
     snd_pcm_t *capture_handle;
-    const char *device_name = "plughw:2,0"; // using arecord -l to checkout the alsa device name
+    const char *device_name = "plughw:5,0"; // using arecord -l to checkout the alsa device name
     ret = audio_CQ_init(device_name, params.sample_rate, &params, capture_handle);
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -190,9 +190,7 @@ int main()
 
 #endif
 
-
     int embedding_size=256;
-
     int feat_dim = 80;
     int SamplesPerChunk = 32000;
     auto speaker_engine = std::make_shared<wespeaker::SpeakerEngine>(

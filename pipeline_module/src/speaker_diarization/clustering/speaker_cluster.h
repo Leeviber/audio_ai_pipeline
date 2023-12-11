@@ -18,7 +18,7 @@ class Cluster
 private:
     // Those 2 values extracted from config.yaml under
     // ~/.cache/torch/pyannote/models--pyannote--speaker-diarization/snapshots/xxx/
-    float m_threshold = 0.7045654963945799;
+    float m_threshold = 0.8145654963945799;
     size_t m_min_cluster_size = 12;
 
 public:

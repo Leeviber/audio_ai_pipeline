@@ -616,31 +616,7 @@ void saveArrayToBinaryFile(const std::vector<std::vector<std::vector<double>>>& 
 
 int main() {
 
-//     // online_params params;// pyannote/audio/pipelines/speaker_verification.py:281 __call__() 
-// //std::vector<std::vector<double>> getEmbedding( EmbeddingModel& em, const std::vector<std::vector<float>>& dataChunks, 
 
-    // int32_t ret = init_online_audio(&params);
-    // if(ret<0){
-    //     fprintf(stderr, "Error init_kws \n");
-    //     return -1;
-    // }
-    // speaker_engine->ExtractEmbedding(enroll_data_int16, samples, &enroll_embs);
-    //////////////// Init TTS //////////////////////
-
-    // tts_params ttsConfig;
-    // ttsConfig.modelPath = "./bin/en_US-joe-medium.onnx";
-    // ttsConfig.modelConfigPath = "./bin/en_US-joe-medium.onnx.json";
-    // ttsConfig.piperConfig.eSpeakDataPath = "./bin/espeak-ng-data/";
-    // ttsConfig.play_device = "plughw:0,0";  // using aplay -l to checkout the sound devices for play
-    // ttsConfig.silence_ms = 100;         // the silence ms between tecx chunk segment by punctuation
-
-    // Initialize the tts
-    // init_tts(ttsConfig);
- 
-    // while (state == SND_PCM_STATE_RUNNING)
-    // {
-    //     state = snd_pcm_state(ttsConfig.pcm_handle);
-    // }
 
     int embedding_batch_size = 32;
     double self_frame_step = 0.016875;

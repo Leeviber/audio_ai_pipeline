@@ -245,8 +245,8 @@ else()
   # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
   # target_link_libraries(diary_demo PUBLIC -pthread litevad speaker speake_diarization onnxruntime)
 
-  # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
-  # target_link_libraries(diary_demo_simple PUBLIC alsa-core litevad speaker -pthread speake_diarization)
+  add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
+  target_link_libraries(diary_demo_simple PUBLIC alsa-core litevad speaker -pthread speake_diarization)
  
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
@@ -255,7 +255,7 @@ else()
     TARGETS
     vad_stt_tts
     # id_demo
-    # diary_demo_simple
+    diary_demo_simple
     track_demo
     DESTINATION
     bin

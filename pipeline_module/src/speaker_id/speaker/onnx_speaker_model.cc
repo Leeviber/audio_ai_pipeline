@@ -143,7 +143,6 @@ void OnnxSpeakerModel::ResnetPostprocess(std::vector<float>* resnet_out,
   // output
   float* outputs = ort_outputs[0].GetTensorMutableData<float>();
   auto type_info = ort_outputs[0].GetTensorTypeAndShapeInfo();
-
   embed->reserve(type_info.GetElementCount());
   // printf("emb num%d \n",type_info.GetElementCount());
   for (size_t i = 0; i < type_info.GetElementCount(); ++i) {

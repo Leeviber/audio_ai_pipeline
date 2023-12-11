@@ -32,7 +32,7 @@ SpeakerEngine::SpeakerEngine(const std::vector<std::string>& models_path,
                              const int embedding_size,
                              const int SamplesPerChunk) {
   // NOTE(cdliang): default num_threads = 1
-  const int kNumGemmThreads = 4;
+  const int kNumGemmThreads = 1;
   // LOG(INFO) << "Reading model " << model_path;
   embedding_size_ = embedding_size;
   // LOG(INFO) << "Embedding size: " << embedding_size_;
@@ -135,6 +135,7 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
       }
       feature_pipeline_->Reset();
     }
+ 
   } else {
     // LOG(ERROR) << "Input is nullptr!";
     printf("input is null");
@@ -160,7 +161,7 @@ void SpeakerEngine::ExtractEmbedding(const int16_t* data, int data_size,
   resnet_out.resize(256*10*25);
   rknn_model_->ExtractResnet(chunks_feat[0], resnet_out);
   onnx_model_->ResnetPostprocess(&resnet_out,&tmp_emb);
-
+ 
 
 #else
   onnx_model_->ExtractEmbedding(chunks_feat[0], &tmp_emb);

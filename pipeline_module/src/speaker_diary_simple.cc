@@ -14,16 +14,6 @@
 // std::string model_path ="./bin/voxceleb_resnet34_LM.onnx";
 // int embedding_size=256;
 
-std::string model_path = "./bin/voxceleb_CAM++_LM.onnx";
-int embedding_size = 512;
-
-int feat_dim = 80;
-int sample_rate = 16000;
-int SamplesPerChunk = 32000;
-auto speaker_engine = std::make_shared<wespeaker::SpeakerEngine>(
-    model_path, feat_dim, sample_rate,
-    embedding_size, SamplesPerChunk);
-
 // int32_t init_online_audio(online_params *params)
 // {
 
@@ -77,21 +67,79 @@ void saveArrayToBinaryFile(const std::vector<std::vector<float>>& array, const s
     std::cout << "Array saved to binary file: " << filename << std::endl;
 }
 
-std::vector<float> last_embs(embedding_size, 0);
-std::vector<float> current_embs(embedding_size, 0);
 
-int sample_chunk_ms = 1000;
+// WAV 文件头结构
+struct WavHeader {
+    char chunkId[4];
+    uint32_t chunkSize;
+    char format[4];
+    char subchunk1Id[4];
+    uint32_t subchunk1Size;
+    uint16_t audioFormat;
+    uint16_t numChannels;
+    uint32_t sampleRate;
+    uint32_t byteRate;
+    uint16_t blockAlign;
+    uint16_t bitsPerSample;
+    char subchunk2Id[4];
+    uint32_t subchunk2Size;
+};
 
-std::vector<float> enroll_embs(embedding_size, 0);
+// 保存 WAV 文件
+void saveWavFile(const std::string& filename, const std::vector<int16_t>& data, uint16_t numChannels, uint32_t sampleRate, uint16_t bitsPerSample) {
+    std::ofstream file(filename, std::ios::binary);
 
+    // 创建 WAV 文件头
+    WavHeader header;
+    strncpy(header.chunkId, "RIFF", 4);
+    header.chunkSize = data.size() * sizeof(int16_t) + sizeof(WavHeader) - 8;
+    strncpy(header.format, "WAVE", 4);
+    strncpy(header.subchunk1Id, "fmt ", 4);
+    header.subchunk1Size = 16;
+    header.audioFormat = 1;
+    header.numChannels = numChannels;
+    header.sampleRate = sampleRate;
+    header.bitsPerSample = bitsPerSample;
+    header.byteRate = sampleRate * numChannels * bitsPerSample / 8;
+    header.blockAlign = numChannels * bitsPerSample / 8;
+    strncpy(header.subchunk2Id, "data", 4);
+    header.subchunk2Size = data.size() * sizeof(int16_t);
 
+    // 写入文件头
+    file.write(reinterpret_cast<const char*>(&header), sizeof(WavHeader));
+
+    // 写入音频数据
+    file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(int16_t));
+
+    // 关闭文件
+    file.close();
+
+    std::cout << "WAV 文件保存成功：" << filename << std::endl;
+}
 int main()
 {
 
     // online_params params;
  
+    std::vector<std::string> model_paths;
+    std::string onnx_model_path ="./bin/voxceleb_resnet34_LM.onnx";
+    model_paths.push_back(onnx_model_path);
+
+    int embedding_size=256;
+    int feat_dim = 80;
+    int SamplesPerChunk = 32000;
+    auto speaker_engine = std::make_shared<wespeaker::SpeakerEngine>(
+        model_paths, feat_dim, 16000,
+        embedding_size, SamplesPerChunk);
 
  
+    std::vector<float> last_embs(embedding_size, 0);
+    std::vector<float> current_embs(embedding_size, 0);
+
+    int sample_chunk_ms = 1000;
+
+    std::vector<float> enroll_embs(embedding_size, 0);
+
     ///////////////// Init VAD /////////////////////////
 
     int vad_begin = 0;
@@ -104,7 +152,7 @@ int main()
     int test_sr = 16000;
     int test_frame_ms = 96;
     float test_threshold = 0.85f;
-    int test_min_silence_duration_ms = 100;
+    int test_min_silence_duration_ms = 200;
     int test_speech_pad_ms = 0;
     int test_window_samples = test_frame_ms * (test_sr / 1000);
 
@@ -116,7 +164,7 @@ int main()
 
 
     ///////////////// READ WAV /////////////////////////
-    std::string audio_path="./bin/multi-speaker_1min.wav";
+    std::string audio_path="./bin/output.wav";
     auto data_reader = wenet::ReadAudioFile(audio_path);
     int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
     int samples = data_reader->num_sample();
@@ -129,7 +177,9 @@ int main()
     int seg_start = -1;
     int seg_end = -1;
     std::vector<std::vector<float>> chunk_enroll_embs;
-
+    std::string baseFilename = "audio_output/audio";
+    std::string fileExtension = ".wav";
+    int file_count=0;
     for (int j = 0; j < samples; j += test_window_samples)
     {
 
@@ -148,24 +198,27 @@ int main()
                 std::vector<int16_t> vad_chunk_int16{&enroll_data_int16[seg_start], &enroll_data_int16[seg_end]};
                 std::vector<float> chunk_emb(embedding_size, 0);
                 std::vector<double> chunk_emb_double(embedding_size, 0);
+                std::string filename = baseFilename + std::to_string(file_count) + fileExtension;
+                file_count+=1;
+                saveWavFile(filename, vad_chunk_int16, 1, 16000, 16);
 
-                speaker_engine->ExtractEmbedding(vad_chunk_int16.data(),
-                                                 vad_chunk_int16.size(),
-                                                 &chunk_emb);
+                // speaker_engine->ExtractEmbedding(vad_chunk_int16.data(),
+                //                                  vad_chunk_int16.size(),
+                //                                  &chunk_emb);
                 
                 // for(int i=0;i<chunk_emb.size();i++)
                 // {
                 //     chunk_emb_double[i]=static_cast<double>(chunk_emb[i]);
                 // }
 
-                chunk_enroll_embs.push_back(chunk_emb);
+                // chunk_enroll_embs.push_back(chunk_emb);
 
           
             }
         }
     }
-    printf("chunk_enroll_embs size(%d,%d)",chunk_enroll_embs.size(),chunk_enroll_embs[0].size());
-    saveArrayToBinaryFile(chunk_enroll_embs,"speaker_embedding.bin");
+    // printf("chunk_enroll_embs size(%d,%d)",chunk_enroll_embs.size(),chunk_enroll_embs[0].size());
+    // saveArrayToBinaryFile(chunk_enroll_embs,"speaker_embedding.bin");
     // auto embeddings1 = Helper::rearrange_up( chunk_enroll_embs, 17 );
     // std::cout << "embeddings1 result size" << embeddings1.size()<<","<<embeddings1[0].size()<<","<<embeddings1[0][0].size() << std::endl;
 

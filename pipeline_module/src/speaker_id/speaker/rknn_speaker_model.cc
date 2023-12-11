@@ -114,6 +114,12 @@ unsigned char* load_model(const char* filename, int* model_size)
 
       memcpy(resnet_out.data(),outputs[0].buf,256*10*25*sizeof(float));
 
+      rknn_ret = rknn_outputs_release(rk_ctx, 1, outputs);
+      if (rknn_ret < 0) 
+      {
+          printf(" rknn_outputs_release failed, ret=%d\n", rknn_ret);
+      }
+
   }
 
 } // namespace wespeaker
