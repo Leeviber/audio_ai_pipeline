@@ -4,21 +4,21 @@
 
 ## 项目描述
 
-该项目由五个子模块组成，分别是 `pipeline_module/kws`、`pipeline_module/litevad`、`pipeline_module/tts` 、`pipeline_module/speaker_id` 和 `pipeline_module/sherpa_stt`，分别对应关键词唤醒（KWS）、活跃说话检测（VAD）、 语音到文字转录（STT）、文字到语音转录（TTS）、说话人ID (speaker_id)。所有的音频处理基于 `pipeline_module/alsa` 模块，它将从 ALSA 读取的音频片段不断写入一个循环缓冲区，并由不同的子模块使用不同的帧长进行读取。
+该项目由五个子模块组成，分别是 `src/kws`、`src/litevad`、`src/tts` 、`src/speaker_id` 和 `src/sherpa_stt`，分别对应关键词唤醒（KWS）、活跃说话检测（VAD）、 语音到文字转录（STT）、文字到语音转录（TTS）、说话人ID (speaker_id)。所有的音频处理基于 `src/alsa` 模块，它将从 ALSA 读取的音频片段不断写入一个循环缓冲区，并由不同的子模块使用不同的帧长进行读取。
 
 ## 子模块
 
-- `pipeline_module/kws`：关键词唤醒（KWS）模块
-- `pipeline_module/litevad`：活跃说话检测（VAD）模块
-- `pipeline_module/sherpa_stt`：语音到文字转录（STT）模块
-- `pipeline_module/tts`：文字到语音转录（TTS）模块
-- `pipeline_module/speaker_id`：说话人识别模块
-- `pipeline_module/speaker_diarization`：说话人日志模块
+- `src/kws`：关键词唤醒（KWS）模块
+- `src/litevad`：活跃说话检测（VAD）模块
+- `src/sherpa_stt`：语音到文字转录（STT）模块
+- `src/tts`：文字到语音转录（TTS）模块
+- `src/speaker_id`：说话人识别模块
+- `src/speaker_diarization`：说话人日志模块
 
 ## 依赖
 
-- `pipeline_module/kws` 模块依赖于 `pipeline_module/librknn_api`，并需要读取 `pipeline_module/bin` 中的模型权重和文件。
-- `pipeline_module/sherpa_stt` 模块依赖于 `cmake` 中的 `json`、`kaldi-native-fbank` 和 `onnxruntime`，并需要读取 `pipeline_module/bin/stt_weight` 的模型权重。
+- `src/kws` 模块依赖于 `src/librknn_api`，并需要读取 `src/bin` 中的模型权重和文件。
+- `src/sherpa_stt` 模块依赖于 `cmake` 中的 `json`、`kaldi-native-fbank` 和 `onnxruntime`，并需要读取 `src/bin/stt_weight` 的模型权重。
 
 
 ## 热词模块
@@ -27,7 +27,7 @@
 `bin/hotwords_token.txt` 文件是一个热词示例，其中每行是由原始热词tokenize化得到的词编码表示，方便模型的直接读取，后续会更新热词tokenizer工具，方便快速从text->token进行解码实现热词 热更新。
 
 ## Speaker Track
-说话人追踪模块为`pipeline_module/speaker_id`,该模块基于speaker embedding模型 `./bin/voxceleb_CAM++_LM.onnx`, 获取每秒钟的speaker embedding并进行历史匹配，该pipeline会输出三个tag 到指定txt,分别为 {匹配的ID，是否第一次出现，过去说话概率}。
+说话人追踪模块为`src/speaker_id`,该模块基于speaker embedding模型 `./bin/voxceleb_CAM++_LM.onnx`, 获取每秒钟的speaker embedding并进行历史匹配，该pipeline会输出三个tag 到指定txt,分别为 {匹配的ID，是否第一次出现，过去说话概率}。
 
 
 输出的tag例子：  
@@ -96,8 +96,8 @@ git lfs pull
 
 该项目包含的示例流程：
 
-1. `kws_stt_online.cc`：将关键词唤醒（KWS）和语音到文字转录（STT）绑定的演示程序。
-2. `vad_stt_online.cc`：将活跃说话检测（VAD）和语音到文字转录（STT）绑定的演示程序。
-3. `vad_stt_tts.cc`: 融合了AI VAD， STT，TTS模块。更新：为STT 添加了热词机制
-4. `speaker_track.cc`: 融合了AI VAD，speaker id模块。
-4. `speaker_diary_simple.cc`: 融合了AI VAD，speaker id，speaker diarization模块。
+1. `pipeline_module/kws_stt_online.cc`：将关键词唤醒（KWS）和语音到文字转录（STT）绑定的演示程序。
+2. `pipeline_module/vad_stt_online.cc`：将活跃说话检测（VAD）和语音到文字转录（STT）绑定的演示程序。
+3. `pipeline_module/vad_stt_tts.cc`: 融合了AI VAD， STT，TTS模块。更新：为STT 添加了热词机制
+4. `pipeline_module/speaker_track.cc`: 融合了AI VAD，speaker id模块。
+4. `pipeline_module/speaker_diary_simple.cc`: 融合了AI VAD，speaker id，speaker diarization模块。
