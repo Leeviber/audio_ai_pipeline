@@ -38,7 +38,7 @@
 
 {0/0/0}. ID 0 代表给当前这一秒没有人说话，是基于VAD判断的。  
 
-## 说话人日志模块 
+## 说话人日志模块 (simple speaker diarization)
 
 该模块位于 `pipeline_module/speaker_diarization`。使用了 VAD（语音活动检测）、说话人识别和层次聚类算法。`pipeline_module/speaker_diary_simple.cc` 是demo。
 
