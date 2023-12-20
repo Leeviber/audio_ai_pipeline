@@ -40,7 +40,7 @@
 
 ## 说话人日志模块 
 
-该模块位于 `src/speaker_diarization`。使用了 VAD（语音活动检测）、说话人识别和层次聚类算法。
+该模块位于 `src/speaker_diarization`。使用了 VAD（语音活动检测）、说话人识别和层次聚类算法。`speaker_diary_simple.cc` 是demo。
 
 ### 功能概述
 - **VAD 和分段**：通过识别超过 200 毫秒的silence来识别活跃的语音片段。每个片段会往前计算一个VAD帧（96 毫秒）采样并进行嵌入。短于 2 秒的片段进行补零，长于 2 秒的进行切片分chunk但不重叠。
