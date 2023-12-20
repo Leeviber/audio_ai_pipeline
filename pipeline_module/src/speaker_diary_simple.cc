@@ -8,47 +8,15 @@
 
 #include "ai_vad.h" // ai based vad
 
-// #include "alsa_cq_buffer.h" // ALSAstt_core
-
 #include "speaker_diary_simple.h"
 #include "sherpa_stt/offline-recognizer.h"
 #include "sherpa_stt/offline-model-config.h"
 
-// #include "tts.h" //tts
-
-// std::string model_path ="./bin/voxceleb_resnet34_LM.onnx";
-// int embedding_size=256;
-
-// int32_t init_online_audio(online_params *params)
-// {
-
-//     params->is_running = true;
-
-//     online_audio audio_buffer;
-//     audio_buffer.pcmf32_new = std::vector<float>(params->n_samples_30s, 0.0f);
-//     audio_buffer.CQ_buffer.resize(sample_rate * 30);
-//     params->audio = audio_buffer;
-//     float value;
-
-//     return 0;
-// }
-
-int16_t float32ToInt16(float value)
+void saveArrayToBinaryFile(const std::vector<std::vector<float>> &array, const std::string &filename)
 {
-    return static_cast<int16_t>(std::round(value * 32767.0f));
-}
-
-void convertFloat32ToInt16(const float *floatData, int16_t *intData, size_t numSamples)
-{
-    for (size_t i = 0; i < numSamples; ++i)
-    {
-        intData[i] = float32ToInt16(floatData[i]);
-    }
-}
-
-void saveArrayToBinaryFile(const std::vector<std::vector<float>>& array, const std::string& filename) {
     std::ofstream file(filename, std::ios::binary);
-    if (!file) {
+    if (!file)
+    {
         std::cout << "Failed to open file for writing." << std::endl;
         return;
     }
@@ -59,11 +27,13 @@ void saveArrayToBinaryFile(const std::vector<std::vector<float>>& array, const s
     // int dim3 = (dim2 > 0) ? array[0][0].size() : 0;
 
     // 写入数组数据
-    for (int i = 0; i < dim1; ++i) {
-        for (int j = 0; j < dim2; ++j) {
+    for (int i = 0; i < dim1; ++i)
+    {
+        for (int j = 0; j < dim2; ++j)
+        {
             // for (int k = 0; k < dim3; ++k) {
-                float value = array[i][j];
-                file.write(reinterpret_cast<const char*>(&value), sizeof(float));
+            float value = array[i][j];
+            file.write(reinterpret_cast<const char *>(&value), sizeof(float));
             // }
         }
     }
@@ -71,16 +41,18 @@ void saveArrayToBinaryFile(const std::vector<std::vector<float>>& array, const s
     file.close();
     std::cout << "Array saved to binary file: " << filename << std::endl;
 }
-struct Embed_Segment {
+struct Embed_Segment
+{
     int start;
     int end;
     std::string text;
 
-    Embed_Segment(int s, int e, const std::string& t) : start(s), end(e), text(t) {}
+    Embed_Segment(int s, int e, const std::string &t) : start(s), end(e), text(t) {}
 };
 
 // WAV 文件头结构
-struct WavHeader {
+struct WavHeader
+{
     char chunkId[4];
     uint32_t chunkSize;
     char format[4];
@@ -97,7 +69,8 @@ struct WavHeader {
 };
 
 // 保存 WAV 文件
-void saveWavFile(const std::string& filename, const std::vector<int16_t>& data, uint16_t numChannels, uint32_t sampleRate, uint16_t bitsPerSample) {
+void saveWavFile(const std::string &filename, const std::vector<int16_t> &data, uint16_t numChannels, uint32_t sampleRate, uint16_t bitsPerSample)
+{
     std::ofstream file(filename, std::ios::binary);
 
     // 创建 WAV 文件头
@@ -117,10 +90,10 @@ void saveWavFile(const std::string& filename, const std::vector<int16_t>& data, 
     header.subchunk2Size = data.size() * sizeof(int16_t);
 
     // 写入文件头
-    file.write(reinterpret_cast<const char*>(&header), sizeof(WavHeader));
+    file.write(reinterpret_cast<const char *>(&header), sizeof(WavHeader));
 
     // 写入音频数据
-    file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(int16_t));
+    file.write(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(int16_t));
 
     // 关闭文件
     file.close();
@@ -128,13 +101,16 @@ void saveWavFile(const std::string& filename, const std::vector<int16_t>& data, 
     std::cout << "WAV 文件保存成功：" << filename << std::endl;
 }
 
-std::vector<int> mergeAndRenumberNumbers(const std::vector<int>& numbers) {
+std::vector<int> mergeAndRenumberNumbers(const std::vector<int> &numbers)
+{
     std::unordered_map<int, int> index_map;
     std::vector<int> unique_numbers;
 
     // 获取唯一的数字并保留其首次出现的顺序
-    for (int num : numbers) {
-        if (index_map.find(num) == index_map.end()) {
+    for (int num : numbers)
+    {
+        if (index_map.find(num) == index_map.end())
+        {
             index_map[num] = static_cast<int>(unique_numbers.size());
             unique_numbers.push_back(num);
         }
@@ -142,59 +118,52 @@ std::vector<int> mergeAndRenumberNumbers(const std::vector<int>& numbers) {
 
     // 根据唯一的数字及其首次出现的顺序进行重新编号
     std::vector<int> result;
-    for (int num : numbers) {
+    for (int num : numbers)
+    {
         result.push_back(index_map[num]);
     }
 
     return result;
-
 }
 
-void generateTimestamps(const std::vector<int>& renumbered_numbers, const std::vector<Embed_Segment>& embedd_segments)
+void generateTimestamps(const std::vector<int> &renumbered_numbers, const std::vector<Embed_Segment> &embedd_segments)
 {
- 
+
     std::cout << "####################### Speaker diarization Result ###################### " << std::endl;
 
-
-    for(int i=0;i<embedd_segments.size();i++)
+    for (int i = 0; i < embedd_segments.size(); i++)
     {
-        std::cout << "Speaker ID: " << renumbered_numbers[i]<<" start:"<< embedd_segments[i].start/16000.0 << ", end: " << embedd_segments[i].end/16000.0;
-        std::cout<<" Text:"<< embedd_segments[i].text<< std::endl;
-
+        std::cout << "Speaker ID: " << renumbered_numbers[i] << " start:" << embedd_segments[i].start / 16000.0 << ", end: " << embedd_segments[i].end / 16000.0;
+        std::cout << " Text:" << embedd_segments[i].text << std::endl;
     }
-
-    
 }
-
-
 
 int main()
 {
 
-    bool enable_stt=true;
+    bool enable_stt = true;
 
     // online_params params;
- 
+
     std::vector<std::string> model_paths;
 #ifdef USE_NPU
-    std::string rknn_model_path ="./bin/Id1_resnet34_LM_main_part.rknn";
-    std::string onnx_model_path ="./bin/Id2_resnet34_LM_post.onnx";
+    std::string rknn_model_path = "./bin/Id1_resnet34_LM_main_part.rknn";
+    std::string onnx_model_path = "./bin/Id2_resnet34_LM_post.onnx";
     model_paths.push_back(rknn_model_path);
     model_paths.push_back(onnx_model_path);
 
 #else
-    std::string onnx_model_path ="./bin/voxceleb_resnet34_LM.onnx";
+    std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
     model_paths.push_back(onnx_model_path);
 
 #endif
-    int embedding_size=256;
+    int embedding_size = 256;
     int feat_dim = 80;
     int SamplesPerChunk = 32000;
     auto speaker_engine = std::make_shared<wespeaker::SpeakerEngine>(
         model_paths, feat_dim, 16000,
         embedding_size, SamplesPerChunk);
 
- 
     std::vector<float> last_embs(embedding_size, 0);
     std::vector<float> current_embs(embedding_size, 0);
 
@@ -221,28 +190,29 @@ int main()
     VadIterator ai_vad(
         path, test_sr, test_frame_ms, test_threshold,
         test_min_silence_duration_ms, test_speech_pad_ms);
-    
+
     ///////////////////////////////////////////////////////
 
     //// Init Sherpa STT module //////////
-    
-    std::string tokens= "./bin/tokens.txt";
-    std::string encoder_filename="./bin/encoder-epoch-30-avg-4.int8.onnx";
-    std::string decoder_filename="./bin/decoder-epoch-30-avg-4.int8.onnx";
-    std::string joiner_filename="./bin/joiner-epoch-30-avg-4.int8.onnx";
+
+    std::string tokens = "./bin/tokens.txt";
+    std::string encoder_filename = "./bin/encoder-epoch-30-avg-4.int8.onnx";
+    std::string decoder_filename = "./bin/decoder-epoch-30-avg-4.int8.onnx";
+    std::string joiner_filename = "./bin/joiner-epoch-30-avg-4.int8.onnx";
 
     sherpa_onnx::OfflineTransducerModelConfig transducer;
-    transducer.encoder_filename=encoder_filename;
-    transducer.decoder_filename=decoder_filename;
-    transducer.joiner_filename=joiner_filename;
+    transducer.encoder_filename = encoder_filename;
+    transducer.decoder_filename = decoder_filename;
+    transducer.joiner_filename = joiner_filename;
 
     sherpa_onnx::OfflineModelConfig model_config;
-    model_config.tokens=tokens;
-    model_config.transducer=transducer;
+    model_config.tokens = tokens;
+    model_config.transducer = transducer;
 
     sherpa_onnx::OfflineRecognizerConfig config;
-    config.model_config=model_config;
-    if (!config.Validate()) {
+    config.model_config = model_config;
+    if (!config.Validate())
+    {
         fprintf(stderr, "Errors in config!\n");
         return -1;
     }
@@ -250,106 +220,118 @@ int main()
     sherpa_onnx::OfflineRecognizer recognizer(config);
     std::vector<std::unique_ptr<sherpa_onnx::OfflineStream>> ss;
     std::vector<sherpa_onnx::OfflineStream *> ss_pointers;
-    //////////////////////////////////////
+    ////////////////////////////////////////////////////
 
-
-
-    ///////////////// READ WAV /////////////////////////
-    std::string audio_path="./bin/multi-speaker_1min.wav";
+    ///////////////// READ and Wrirte WAV /////////////////////////
+    std::string audio_path = "./bin/multi-speaker_1min.wav";
     auto data_reader = wenet::ReadAudioFile(audio_path);
     int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
     int samples = data_reader->num_sample();
-    printf("samples%d\n",samples);
     std::vector<float> enroll_data_flt32(samples);
     for (int i = 0; i < samples; i++)
     {
         enroll_data_flt32[i] = static_cast<float>(enroll_data_int16[i]) / 32768;
     }
+
     int seg_start = -1;
     int seg_end = -1;
     std::vector<std::vector<float>> chunk_enroll_embs;
     std::vector<std::vector<double>> double_chunk_enroll_embs;
 
-    // std::string baseFilename = "test_audio/audio_output/audio";
     std::string basePath = "test_audio/audio_output/";
     std::string prefix = "audio";
- 
+
     std::string fileExtension = ".wav";
-    int file_count=0;
+    int file_count = 0;
+    ////////////////////////////////////////////////////
 
- 
+    ///////////////// Process the audio for diarization /////////////////////////
+
+    // 创建一个存储嵌入式段落的向量
     std::vector<Embed_Segment> embedd_segment;
+
+    // 记录开始时间
     auto start = std::chrono::high_resolution_clock::now();
-    int audio_chunk=samples/test_window_samples;
 
-    for (int j = 0; j < audio_chunk; j ++)
+    // 计算音频数据块的数量
+    int audio_chunk = samples / test_window_samples;
+
+    // 对每个音频数据块进行处理
+    for (int j = 0; j < audio_chunk; j++)
     {
+        // 提取当前窗口的音频数据
+        std::vector<float> window_chunk{&enroll_data_flt32[0] + j * test_window_samples, &enroll_data_flt32[0] + j * test_window_samples + test_window_samples};
 
-        std::vector<float> window_chunk{&enroll_data_flt32[0] + j*test_window_samples, &enroll_data_flt32[0] + j*test_window_samples + test_window_samples};
-
+        // 使用VAD（Voice Activity Detection）模块进行语音状态预测
         int32_t vad_state = ai_vad.predict(window_chunk);
+
+        // 当检测到语音开始
         if (vad_state == 2)
         {
-            seg_start = (j-1)*test_window_samples;
+            seg_start = (j - 1) * test_window_samples; // 记录语音起始位置
         }
+
+        // 当检测到语音结束
         if (vad_state == 3)
         {
-            seg_end = j*test_window_samples;
+            seg_end = j * test_window_samples; // 记录语音结束位置
+
+            // 如果已经有起始位置，进行处理
             if (seg_start != -1)
             {
+                // 提取VAD检测到的语音片段
                 std::vector<int16_t> vad_chunk_int16{&enroll_data_int16[seg_start], &enroll_data_int16[seg_end]};
                 std::vector<float> vad_chunk_fp32{&enroll_data_flt32[seg_start], &enroll_data_flt32[seg_end]};
-            
+
+                // 创建一个STT（语音到文本）流并进行音频输入
                 auto s = recognizer.CreateStream();
                 s->AcceptWaveform(16000, vad_chunk_fp32.data(), vad_chunk_fp32.size());
                 ss.push_back(std::move(s));
                 ss_pointers.push_back(ss.back().get());
                 recognizer.DecodeStreams(ss_pointers.data(), 1);
-                const std::string text= ss[0]->GetResult().text;
-                embedd_segment.push_back(Embed_Segment(seg_start,seg_end,text));
 
+                // 获取STT识别结果并将嵌入式段落存储到向量中
+                const std::string text = ss[0]->GetResult().text;
+                embedd_segment.push_back(Embed_Segment(seg_start, seg_end, text));
+
+                // 清空STT流相关的数据结构
                 ss.clear();
                 ss_pointers.clear();
+
+                // 保存语音片段到WAV文件
                 std::vector<float> chunk_emb(embedding_size, 0);
                 std::vector<double> chunk_emb_double(embedding_size, 0);
                 std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
-                file_count+=1;
+                file_count += 1;
                 saveWavFile(filename, vad_chunk_int16, 1, 16000, 16);
 
-                speaker_engine->ExtractEmbedding(vad_chunk_int16.data(),
-                                                 vad_chunk_int16.size(),
-                                                 &chunk_emb);
-                
-                for(int i=0;i<chunk_emb.size();i++)
+                // 提取语音片段的嵌入式特征
+                speaker_engine->ExtractEmbedding(vad_chunk_int16.data(), vad_chunk_int16.size(), &chunk_emb);
+
+                // 将嵌入式特征转换为双精度类型并存储到向量中
+                for (int i = 0; i < chunk_emb.size(); i++)
                 {
-                    chunk_emb_double[i]=static_cast<double>(chunk_emb[i]);
+                    chunk_emb_double[i] = static_cast<double>(chunk_emb[i]);
                 }
 
                 double_chunk_enroll_embs.push_back(chunk_emb_double);
-
-          
             }
         }
     }
- 
- 
-    // std::vector<std::vector<std::vector<double>>> segmentations;
-    // /////////////////////////////////////////////////
+
+    // 创建一个用于聚类的Cluster对象
     Cluster cst;
-    std::vector<int> clustersRes; // output 1 for clustering
+    std::vector<int> clustersRes; // 存储聚类结果
     cst.custom_clustering(double_chunk_enroll_embs, clustersRes);
- 
+
+    // 合并并重新编号聚类结果的数字
     std::vector<int> merged_renumbered_numbers;
     merged_renumbered_numbers = mergeAndRenumberNumbers(clustersRes);
+
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "diarization 运行时间: " << duration.count() << " 毫秒\n";
 
-    // 将时间差转换为毫秒并输出
-    std::cout << "程序运行时间: " << duration.count() << " 毫秒\n";
-
+    // 生成转录时间戳
     generateTimestamps(merged_renumbered_numbers, embedd_segment);
-
- 
 }
-
- 
