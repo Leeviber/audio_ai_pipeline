@@ -385,7 +385,7 @@ public:
 
             // np.argmin
             for (size_t i = 0; i < centroids_cdist.size(); ++i) {
-                if (centroids_cdist[i][small_k] < minVal && centroids_cdist[i][small_k]<0.4 ) {
+                if (centroids_cdist[i][small_k] < minVal && centroids_cdist[i][small_k]<0.6 ) {
                     minVal = centroids_cdist[i][small_k];
                     large_k = i;
                 }
