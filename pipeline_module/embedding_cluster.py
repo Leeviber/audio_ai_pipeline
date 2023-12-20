@@ -54,7 +54,7 @@ def compute_fbank(wav_path,
     mat = mat - torch.mean(mat, dim=0)
     return mat
 
-folder_path = "audio_output/audio"
+folder_path = "test_audio/audio_output/audio"
 file_extension = ".wav"
 def sort_by_number(filename):
     # 提取文件名中的数字部分
@@ -95,7 +95,7 @@ print(array_correc_normed.shape)
 Z = linkage(array_correc_normed, method='centroid', metric="euclidean")
 
 # apply the predefined threshold
-clusters = fcluster(Z, 0.8853814381597874, criterion="distance") - 1
+clusters = fcluster(Z, 0.8153814381597874, criterion="distance") - 1
 print(Z.shape)
 print(clusters)
 # split clusters into two categories based on their number of items:

@@ -18,7 +18,7 @@ class Cluster
 private:
     // Those 2 values extracted from config.yaml under
     // ~/.cache/torch/pyannote/models--pyannote--speaker-diarization/snapshots/xxx/
-    float m_threshold = 0.8145654963945799;
+    float m_threshold = 0.8153814381597874;
     size_t m_min_cluster_size = 12;
 
 public:
@@ -43,7 +43,6 @@ public:
         auto filteredEmbeddings = filter_embeddings( embeddings, chunk_idx, speaker_idx );
 
         size_t num_embeddings = filteredEmbeddings.size();
-        printf("num_embeddings%d\n",num_embeddings);
         set_num_clusters( static_cast<int>( num_embeddings ), num_clusters, min_clusters, max_clusters );
 
         // do NOT apply clustering when min_clusters = max_clusters = 1
@@ -64,6 +63,44 @@ public:
 
         // python: hard_clusters, soft_clusters = self.assign_embeddings(
         assign_embeddings( embeddings, chunk_idx, speaker_idx, clusterRes, hard_clusters );
+    }
+
+
+    void custom_clustering( const std::vector<std::vector<double>>& embeddings,  
+        std::vector<int>& clusterRes, 
+        int num_clusters = -1, int min_clusters = -1, int max_clusters = -1 )
+    {
+        // python: train_embeddings, train_chunk_idx, train_speaker_idx = self.filter_embeddings
+        std::vector<int> chunk_idx;
+        std::vector<int> speaker_idx;
+        // auto filteredEmbeddings = filter_embeddings( embeddings, chunk_idx, speaker_idx );
+
+        size_t num_embeddings = embeddings.size();
+        // printf("num_embeddings%d\n",num_embeddings);
+        set_num_clusters( static_cast<int>( num_embeddings ), num_clusters, min_clusters, max_clusters );
+
+        // do NOT apply clustering when min_clusters = max_clusters = 1
+        if( max_clusters < 2 )
+        {
+            size_t num_chunks = embeddings.size();
+            size_t num_speakers = embeddings[0].size();
+            std::vector<std::vector<int>> hcluster( num_chunks, std::vector<int>( num_speakers, 0 ));
+            // hard_clusters.swap( hcluster );
+            return;
+        }
+        // printf("min_clusters%d, max_clusters%d,num_clusters%d \n",min_clusters,max_clusters,num_clusters);
+
+        // python: train_clusters = self.cluster(
+        clusterRes = cluster( embeddings, min_clusters, max_clusters, num_clusters );
+        // for(int i=0;i<clusterRes.size();i++)
+        // {
+        //     printf("clusterRes%d \n",clusterRes[i]);
+        // }
+        // printf("output num_clusters%d \n",num_clusters);
+
+
+        // python: hard_clusters, soft_clusters = self.assign_embeddings(
+        // assign_embeddings( embeddings, chunk_idx, speaker_idx, clusterRes, hard_clusters );
     }
 
     // Assign embeddings to the closest centroid
@@ -252,7 +289,8 @@ public:
         // (0.1 value is kind of arbitrary, though)
         m_min_cluster_size = std::min( m_min_cluster_size, std::max(static_cast<size_t>( 1 ),
                     static_cast<size_t>( round(0.1 * num_embeddings))));
-
+        m_min_cluster_size=2;
+        // printf("m_min_cluster_size%d",m_min_cluster_size);
         // linkage function will complain when there is just one embedding to cluster
         //if( num_embeddings == 1 ) 
         //     return np.zeros((1,), dtype=np.uint8)
@@ -296,6 +334,9 @@ public:
                 small_clusters.push_back( entry.first );
             }
         }
+        // printf("large_clusters.size()%d\n",large_clusters.size());
+        // printf("small_clusters.size()%d\n",small_clusters.size());
+
         size_t num_large_clusters = large_clusters.size();
 
         // force num_clusters to min_clusters in case the actual number is too small
@@ -325,7 +366,12 @@ public:
 
         // re-assign each small cluster to the most similar large cluster based on their respective centroids
         auto large_centroids = Helper::calculateClusterMeans(embeddings, clusters, large_clusters);
+        // printf("large_centroids.size()%d\n",large_centroids.size());
+
         auto small_centroids = Helper::calculateClusterMeans(embeddings, clusters, small_clusters);
+
+
+        // printf("small_centroids.size()%d\n",small_centroids.size());
 
         // python: centroids_cdist = cdist(large_centroids, small_centroids, metric=self.metric)
         auto centroids_cdist = Helper::cosineSimilarity( large_centroids, small_centroids );
@@ -339,20 +385,24 @@ public:
 
             // np.argmin
             for (size_t i = 0; i < centroids_cdist.size(); ++i) {
-                if (centroids_cdist[i][small_k] < minVal) {
+                if (centroids_cdist[i][small_k] < minVal && centroids_cdist[i][small_k]<0.6 ) {
                     minVal = centroids_cdist[i][small_k];
                     large_k = i;
                 }
+ 
             }
             for( size_t i = 0; i < clusters.size(); ++i )
             {
                 if( clusters[i] == small_clusters[small_k] )
                 {
-                    clusters[i] = large_clusters[large_k];
+                    if(large_k!=-1)
+                    {
+                        clusters[i] = large_clusters[large_k];
+
+                    }
                 }
             }
 
-            std::cout << small_k << ", " << large_k << std::endl;
         }
 
         // Find unique clusters and return inverse mapping

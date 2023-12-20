@@ -13,4 +13,4 @@ cmake \
   ..
 make -j4
 # make install/strip
-cp bin/vad_stt_tts ../
+ 

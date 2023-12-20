@@ -32,7 +32,7 @@ SpeakerEngine::SpeakerEngine(const std::vector<std::string>& models_path,
                              const int embedding_size,
                              const int SamplesPerChunk) {
   // NOTE(cdliang): default num_threads = 1
-  const int kNumGemmThreads = 1;
+  const int kNumGemmThreads = 4;
   // LOG(INFO) << "Reading model " << model_path;
   embedding_size_ = embedding_size;
   // LOG(INFO) << "Embedding size: " << embedding_size_;
@@ -90,6 +90,7 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
     std::vector<std::vector<float>> chunk_feat;
     feature_pipeline_->AcceptWaveform(std::vector<int16_t>(
         data, data + data_size));
+    printf("per_chunk_samples_%d\n",per_chunk_samples_);
     if (per_chunk_samples_ <= 0) {
       // full mode
       feature_pipeline_->Read(feature_pipeline_->num_frames(), &chunk_feat);
@@ -101,9 +102,13 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
       int num_chunk_frames_ = 1 + ((
         per_chunk_samples_ - sample_rate_ / 1000 * 25) /
         (sample_rate_ / 1000 * 10));
- 
+     printf("num_chunk_frames_%d\n",num_chunk_frames_);
+
       int chunk_num = std::ceil( 
         feature_pipeline_->num_frames() / num_chunk_frames_);
+
+      printf("chunk_num%d\n",chunk_num);
+
       chunks_feat->reserve(chunk_num);
       chunk_feat.reserve(num_chunk_frames_);
       while (feature_pipeline_->NumQueuedFrames() >= num_chunk_frames_) {
@@ -113,6 +118,8 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
       }
       // last_chunk
       int last_frames = feature_pipeline_->NumQueuedFrames();
+      printf("last_frames%d\n",last_frames);
+
       if (last_frames > 0) {
         feature_pipeline_->Read(last_frames, &chunk_feat);
         if (chunks_feat->empty()) {
@@ -150,25 +157,29 @@ void SpeakerEngine::ExtractEmbedding(const int16_t* data, int data_size,
   this->ExtractFeature(data, data_size, &chunks_feat);
   int chunk_num = chunks_feat.size();
   avg_emb->resize(embedding_size_, 0);
-  
-  std::vector<float> tmp_emb;
-  this->ApplyMean(&chunks_feat[0], chunks_feat[0][0].size());
-
+ 
+  for (int i = 0; i < chunk_num; i++) {
+    std::vector<float> tmp_emb;
+    this->ApplyMean(&chunks_feat[i], chunks_feat[i][0].size());
 
 #ifdef USE_NPU
-
-  std::vector<float> resnet_out;
-  resnet_out.resize(256*10*25);
-  rknn_model_->ExtractResnet(chunks_feat[0], resnet_out);
-  onnx_model_->ResnetPostprocess(&resnet_out,&tmp_emb);
- 
-
+    std::vector<float> resnet_out;
+    resnet_out.resize(256*10*25);
+    rknn_model_->ExtractResnet(chunks_feat[i], resnet_out);
+    onnx_model_->ResnetPostprocess(&resnet_out,&tmp_emb);
 #else
-  onnx_model_->ExtractEmbedding(chunks_feat[0], &tmp_emb);
+    onnx_model_->ExtractEmbedding(chunks_feat[i], &tmp_emb);
 #endif
-  for (int j = 0; j < tmp_emb.size(); j++) {
-    (*avg_emb)[j] = tmp_emb[j];
+
+    for (int j = 0; j < tmp_emb.size(); j++) {
+      (*avg_emb)[j] += tmp_emb[j];
+    }
   }
+  for (int i = 0; i < avg_emb->size(); i++) {
+    (*avg_emb)[i] /= chunk_num;
+  }
+
+  
 
 }
  

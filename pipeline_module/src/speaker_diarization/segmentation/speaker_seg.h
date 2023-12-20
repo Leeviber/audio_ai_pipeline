@@ -13,6 +13,7 @@
 #include <chrono>
 #include <sstream>  
 #include <assert.h>
+#include<algorithm>
 #include "onnx_model.h"
 #include "speaker_help.h"
 
@@ -350,9 +351,9 @@ class SegmentModel : public OnnxModel
 private:
     double m_duration = 5.0;
     double m_step = 0.5;
-    int m_batch_size = 32;
+    int m_batch_size = 1;
     int m_sample_rate = 16000;
-    double m_diarization_segmentation_threashold = 0.4442333667381752;
+    double m_diarization_segmentation_threashold = 0.5442333667381752;
     double m_diarization_segmentation_min_duration_off = 0.5817029604921046;
     size_t m_num_samples = 0;
 
@@ -367,21 +368,23 @@ public:
     // output: batch size x 293 x 3
     std::vector<std::vector<std::vector<float>>> infer( const std::vector<std::vector<float>>& waveform )
     {
+
         // Create a std::vector<float> with the same size as the tensor
-        //std::vector<float> audio( waveform.size() * waveform[0].size());
-        std::vector<float> audio( m_batch_size * waveform[0].size());
-        //for( size_t i = 0; i < waveform.size(); ++i )
-        for( size_t i = 0; i < m_batch_size; ++i )
+        std::vector<float> audio( waveform.size() * waveform[0].size());
+        // std::vector<float> audio( m_batch_size * waveform[0].size());
+        for( size_t i = 0; i < waveform.size(); ++i )
+        // for( size_t i = 0; i < m_batch_size; ++i )
         {
             for( size_t j = 0; j < waveform[0].size(); ++j )
             {
                 audio[i*waveform[0].size() + j] = waveform[i][j];
             }
         }
+        std::cout<<"waveform.size()"<<waveform.size()<<std::endl;
 
         // batch_size * num_channels (1 for mono) * num_samples
-        //const int64_t batch_size = waveform.size();
-        const int64_t batch_size = m_batch_size;
+        const int64_t batch_size = waveform.size();
+        // const int64_t batch_size = m_batch_size;
         const int64_t num_channels = 1;
         int64_t input_node_dims[3] = {batch_size, num_channels,
             static_cast<int64_t>(waveform[0].size())};
@@ -418,9 +421,34 @@ public:
 
         return res;
     }
+    // 函数接受一个二维数组作为输入，计算每列的平均值，返回一个一维数组
+    std::vector<double> 
+    calculateColumnAverages(const std::vector<std::vector<double>>& inputArray) {
+        // 创建用于存储平均值的数组，初始化为0.0，共三个元素
+        std::vector<double> averages(inputArray[0].size(), 0.0);
+        // std::cout<<"inputArray.size(): ("<<inputArray.size()<<","<<inputArray[0].size()<<")"<<std::endl;
+        std::cout<<"inputArray: ";
+        // 计算每列的和
+        for (size_t i = 200; i < inputArray.size(); ++i) {
+            for (size_t j = 0; j < inputArray[i].size(); ++j) {
+                std::cout<<","<< inputArray[i][j];
+                averages[j] += inputArray[i][j];
+            }
+            std::cout<<""<<std::endl;
 
-    // pyannote/audio/core/inference.py:202
-    std::vector<std::vector<std::vector<float>>> slide(const std::vector<float>& waveform, 
+        }
+        std::cout<<""<<std::endl;
+
+        // 计算每列的平均值
+        for (size_t i = 0; i < averages.size(); ++i) {
+            averages[i] /= (inputArray.size()-200);
+        }
+
+        // 返回存储平均值的数组
+        return averages;
+    }
+
+    std::vector<std::vector<std::vector<float>>> slide_batch(const std::vector<float>& waveform, 
             SlidingWindow& res_frames )
     {
         int sample_rate = 16000;
@@ -483,6 +511,139 @@ public:
             std::copy(start, end, chunk.begin());
             chunks.push_back( chunk ); 
             auto tmp = infer( chunks );
+            assert( tmp.size() == 1 );
+
+            // Padding
+            auto a = tmp[0];
+            for( size_t i = a.size(); i < num_frames_per_chunk;  ++i )
+            {
+                std::vector<float> pad( a[0].size(), 0.0 );
+                a.push_back( pad );
+            }
+            outputs.push_back( a );
+        }
+
+        // Calc segments
+        res_frames.start = 0.0;
+        res_frames.step = m_step;
+        res_frames.duration = m_duration;
+        res_frames.num_samples = num_samples;
+        /*
+        float start = 0.0;
+        size_t cur_frames = 0;
+        while( true )
+        {
+            std::pair<float, float> seg = { start, start + m_duration };
+            segments.push_back( seg );
+            if( cur_frames + window_size >= num_samples )
+            {
+                break;
+            }
+            start += m_step;
+            cur_frames += step_size;
+        }
+        */
+
+        return outputs;
+    }
+    // pyannote/audio/core/inference.py:202
+    std::vector<std::vector<std::vector<float>>> slide(const std::vector<float>& waveform, 
+            SlidingWindow& res_frames )
+    {
+        int sample_rate = 16000;
+        int window_size = std::round(m_duration * sample_rate); // 80000
+        int step_size = std::round(m_step * sample_rate); // 8000
+        int num_channels = 1;
+        size_t num_samples = waveform.size();
+        int num_frames_per_chunk = 293; // Need to check with multiple wave files
+        size_t i = 0;
+        std::vector<std::vector<float>> chunks;
+        std::vector<std::vector<std::vector<float>>> outputs;
+        static int temp_mex_idx= 0;
+        while( i + window_size < num_samples )
+        {
+ 
+                // Starting and Ending iterators
+            auto start = waveform.begin() + i;
+            auto end = start + window_size;
+
+            // To store the sliced vector
+            std::vector<float> chunk( window_size, 0.0 );
+
+            // Copy vector using copy function()
+            std::copy(start, end, chunk.begin());
+            chunks.push_back( chunk ); 
+            if( chunks.size() == m_batch_size )
+            {    
+                auto start_time = std::chrono::high_resolution_clock::now();
+
+                auto tmp = infer( chunks );
+
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+                std::cout << "infer1 函数的运行时间为: " << duration.count() << " 毫秒" << std::endl;
+                // std::cout<<"tmp size"<<tmp.size()<<"x"<<tmp[0].size()<<"x"<<tmp[0][0].size()<<std::endl;
+                // auto binarized = binarize_swf(tmp,false);
+                // std::cout<<"binarized size"<<binarized.size()<<"x"<<binarized[0].size()<<"x"<<binarized[0][0].size()<<std::endl;
+                // std::vector<double> result = calculateColumnAverages(binarized[0]);
+                // std::cout<<"mean result "<<std::endl<<"speaker 1: "<<result[0]<<std::endl<<" speaker 2: "<<result[1]<<std::endl<<" speaker 3: "<<result[2]<<std::endl;
+                // int maxPosition = max_element(result.begin(),result.end()) - result.begin(); 
+                // std::cout<<"maxPosition:"<<maxPosition<<" temp_mex_idx:"<<temp_mex_idx<<" result[maxPosition]:"<<result[maxPosition]<<std::endl;
+                // if(maxPosition!=temp_mex_idx && result[maxPosition]>0.2)
+                // {
+                //     temp_mex_idx=maxPosition;
+                //     std::cout<<"speaker changeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"<<std::endl;
+                // }
+
+                // std::cout<<"maxPosition "<<maxPosition<<std::endl;
+                for( const auto& a : tmp )
+                {
+                    outputs.push_back( a );
+                }
+                chunks.clear();
+            }
+
+            i += step_size;
+        }
+
+        // // Process remaining chunks
+        if( chunks.size() > 0 )
+        {
+            auto start_time = std::chrono::high_resolution_clock::now();
+
+            auto tmp = infer( chunks );
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            std::cout << "infer2 函数的运行时间为: " << duration.count() << " 毫秒" << std::endl;
+
+            for( const auto& a : tmp )
+            {
+                outputs.push_back( a );
+            }
+            chunks.clear();
+        }
+
+        // Process last chunk if have, last chunk may not equal window_size
+        // Make sure at least we have 1 element remaining
+        if( i + 1 < num_samples )
+        {
+            // Starting and Ending iterators
+            auto start = waveform.begin() + i;
+            auto end = waveform.end();
+
+            // To store the sliced vector, always window_size, for last chunk we pad with 0.0
+            std::vector<float> chunk( end - start, 0.0 );
+
+            // Copy vector using copy function()
+            std::copy(start, end, chunk.begin());
+            chunks.push_back( chunk ); 
+            auto start_time = std::chrono::high_resolution_clock::now();
+
+            auto tmp = infer( chunks );
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            std::cout << "infer3 函数的运行时间为: " << duration.count() << " 毫秒" << std::endl;
+
             assert( tmp.size() == 1 );
 
             // Padding
@@ -639,18 +800,9 @@ public:
 
         // python: return np.where( same_as, on[samples, well_defined_idx[samples, same_as - 1]], initial_state)
         // TODO: delete tmp, directly return
-#ifdef WRITE_DATA
-        debugWrite2d( scores, "cpp_binarize_score" );
-        debugWrite2d( same_as, "cpp_same_as" );
-        debugWrite2d( on, "cpp_on" );
-        debugWrite2d( well_defined_idx, "cpp_well_defined_idx" );
-        debugWrite2d( initial_state, "cpp_initial_state" );
-        debugWrite2d( samples, "cpp_samples" );
-#endif // WRITE_DATA
+ 
         auto tmp = Helper::numpy_where( same_as, on, well_defined_idx, initial_state, samples );
-#ifdef WRITE_DATA
-        debugWrite2d( tmp, "cpp_binary_ndarray" );
-#endif // WRITE_DATA
+ 
         return tmp;
     }
 
@@ -684,25 +836,7 @@ public:
             SlidingWindow& count_frames,
             int num_samples )
     {
-        // Get frames first - python: self._frames
-        // step = (self.inc_num_samples / self.inc_num_frames) / sample_rate
-        // pyannote/audio/core/model.py:243
-        // currently cannot where where self.inc_num_samples / self.inc_num_frames from
-        //int inc_num_samples = 270; // <-- this may not be correct
-        //int inc_num_frames = 1; // <-- this may not be correct
-        //float step = ( inc_num_samples * 1.0f / inc_num_frames) / m_sample_rate;
-        //float window = step;
-        //std::vector<std::pair<float, float>> frames;
-        //float start = 0.0;
-        //while( true )
-        //{
-        //    start += step;
-        //    if( start * m_sample_rate >= num_samples )
-        //        break;
-        //    float end = start + window;
-        //    frames.emplace_back(std::make_pair<float, float>(start, end));
-        //}
-
+ 
         // python: trimmed = Inference.trim
         SlidingWindow trimmed_frames;
         SlidingWindow frames( 0.0, m_step, m_duration );

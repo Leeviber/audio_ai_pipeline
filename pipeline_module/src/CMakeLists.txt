@@ -199,11 +199,11 @@ if(TARGET_SOC STREQUAL "rk3588")
   # add_executable(id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_id.cc)
   # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker stt_core)
  
-  # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
-  # target_link_libraries(diary_demo PUBLIC alsa-core litevad -lasound -pthread speake_diarization)
+  add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
+  target_link_libraries(diary_demo PUBLIC alsa-core litevad speaker -lasound -pthread speake_diarization onnxruntime)
  
-  # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
-  # target_link_libraries(diary_demo_simple PUBLIC alsa-core litevad -lasound -pthread speake_diarization)
+  add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
+  target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
 
   if(SPEAK_ID_NPU)
     add_definitions(-DUSE_NPU)
@@ -212,18 +212,23 @@ if(TARGET_SOC STREQUAL "rk3588")
   add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
   target_link_libraries(track_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
 
+
+  add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
+  target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
+
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
  
   install(
     TARGETS
-    kws_stt
-    vad_stt
-    vad_stt_tts
+    # kws_stt
+    # vad_stt
+    # vad_stt_tts
     # id_demo
     # diary_demo
-    # diary_demo_simple
-    track_demo
+    diary_demo_simple
+    # track_demo
+    # change_demo
     DESTINATION
     bin
   )
@@ -232,31 +237,40 @@ else()
   target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static)
   target_link_libraries(sherpa-onnx-core onnxruntime)
 
-  add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
-  target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lespeak-ng -lasound onnxruntime)
+  # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
+  # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lespeak-ng -lasound onnxruntime)
 
   # add_executable(id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_id.cc)
   # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker stt_core)
  
 
-  add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
-  target_link_libraries(track_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
+  # add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
+  # target_link_libraries(track_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
+ 
+  # add_executable(change_id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change_id_base.cc)
+  # target_link_libraries(change_id_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
  
   # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
   # target_link_libraries(diary_demo PUBLIC -pthread litevad speaker speake_diarization onnxruntime)
 
   add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
-  target_link_libraries(diary_demo_simple PUBLIC alsa-core litevad speaker -pthread speake_diarization)
+  target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
  
+  # add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
+  # target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
+
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
 
   install(
     TARGETS
-    vad_stt_tts
+    # vad_stt_tts
     # id_demo
+    # diary_demo
     diary_demo_simple
-    track_demo
+    # change_demo
+    # change_id_demo
+    # track_demo
     DESTINATION
     bin
   )

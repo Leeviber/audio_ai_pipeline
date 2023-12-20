@@ -221,6 +221,7 @@ public:
                                                  const std::vector<int>& largeClusters) 
     {
         std::vector<std::vector<T>> clusterMeans;
+        // std::cout<<"here .size()"<<largeClusters.size()<<std::endl;
 
         for (int large_k : largeClusters) {
             std::vector<T> meanEmbedding( embeddings[0].size(), 0.0 );
@@ -228,6 +229,7 @@ public:
             for (size_t i = 0; i < clusters.size(); ++i) {
                 if (clusters[i] == large_k) {
                     // Add the embedding to the mean
+
                     for (size_t j = 0; j < meanEmbedding.size(); ++j) {
                         meanEmbedding[j] += embeddings[i][j];
                     }

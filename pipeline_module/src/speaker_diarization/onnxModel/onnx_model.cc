@@ -18,7 +18,7 @@
 
 #include "onnx_model.h"
 
-Ort::Env OnnxModel::env_ = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "");
+Ort::Env OnnxModel::env_ = Ort::Env(ORT_LOGGING_LEVEL_INFO, "");
 //Ort::Env OnnxModel::env_ = Ort::Env(ORT_LOGGING_LEVEL_INFO, "");
 //Ort::Env OnnxModel::env_ = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "");
 Ort::SessionOptions OnnxModel::session_options_ = Ort::SessionOptions();

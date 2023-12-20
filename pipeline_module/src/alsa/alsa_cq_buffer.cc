@@ -163,6 +163,7 @@ int32_t audio_CQ_get(online_params *params,int get_ms,int keep_ms)
     }
     else
     {
+ 
         return len - n_samples;
     }
     // fprintf(stdout,"CQ_audio_exit in get %d \n",params->CQ_audio_exit);
