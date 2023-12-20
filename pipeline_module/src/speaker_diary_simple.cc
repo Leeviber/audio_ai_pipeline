@@ -214,7 +214,7 @@ int main()
     int test_sr = 16000;
     int test_frame_ms = 96;
     float test_threshold = 0.85f;
-    int test_min_silence_duration_ms = 250;
+    int test_min_silence_duration_ms = 200;
     int test_speech_pad_ms = 0;
     int test_window_samples = test_frame_ms * (test_sr / 1000);
 
@@ -255,7 +255,7 @@ int main()
 
 
     ///////////////// READ WAV /////////////////////////
-    std::string audio_path="./bin/ted_talk.wav";
+    std::string audio_path="./bin/multi-speaker_1min.wav";
     auto data_reader = wenet::ReadAudioFile(audio_path);
     int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
     int samples = data_reader->num_sample();
@@ -273,18 +273,7 @@ int main()
     // std::string baseFilename = "test_audio/audio_output/audio";
     std::string basePath = "test_audio/audio_output/";
     std::string prefix = "audio";
-#ifndef USE_NPU
-
-    for (const auto& entry : std::filesystem::directory_iterator(basePath)) {
-        if (entry.is_regular_file()) {
-            std::string filename = entry.path().filename().string();
-            if (filename.find(prefix) == 0) {
-                std::filesystem::remove(entry.path());
-                std::cout << "删除文件: " << filename << std::endl;
-            }
-        }
-    }
-#endif
+ 
     std::string fileExtension = ".wav";
     int file_count=0;
 
@@ -301,7 +290,7 @@ int main()
         int32_t vad_state = ai_vad.predict(window_chunk);
         if (vad_state == 2)
         {
-            seg_start = j*test_window_samples ;
+            seg_start = (j-1)*test_window_samples;
         }
         if (vad_state == 3)
         {

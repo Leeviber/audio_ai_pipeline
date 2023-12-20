@@ -45,7 +45,7 @@ cmake \
   -DSHERPA_ONNX_ENABLE_C_API=OFF \
   -DSHERPA_ONNX_ENABLE_WEBSOCKET=OFF \
   -DCMAKE_TOOLCHAIN_FILE=aarch64-linux-gnu.toolchain.cmake \
-  -DSPEAK_ID_NPU=ON \
+  -DSPEAK_ID_NPU=OFF \
   ..
 
 make -j4
