@@ -2,26 +2,7 @@ import numpy as np
 from scipy.spatial.distance import cosine
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 import matplotlib.pyplot as plt
-
-# def loadArrayFromBinaryFile(filename):
-#     with open(filename, 'rb') as file:
-#         # 读取二进制文件中的数据
-#         data = file.read()
-
-#     # 将二进制数据转换为NumPy数组
-#     array = np.frombuffer(data, dtype=np.float32)
-
-#     # 根据数组的维度重新构建NumPy数组
-#     dim1 = 17
-#     dim2 = 512
-#     # dim3 = 3
-#     array = array.reshape(dim1, dim2)
-
-#     return array
-
-# array_correct = loadArrayFromBinaryFile('speaker_embedding.bin')
-# print(array_correct.shape)
-
+ 
  
 
 import onnxruntime as ort

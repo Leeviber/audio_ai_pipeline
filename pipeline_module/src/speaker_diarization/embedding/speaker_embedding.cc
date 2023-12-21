@@ -1,3 +1,4 @@
+
 #include "speaker_embedding.h"
  
 int embed_model_size=256;

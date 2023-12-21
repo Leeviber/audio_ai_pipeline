@@ -511,6 +511,12 @@ public:
                 }
                 for (int k = 0; k < numChannels; ++k) 
                 {
+                    if( keep )
+                        result[i][j][k] = data[i][j][k];
+                }
+            }
+        }
+
         return result;
     }
 

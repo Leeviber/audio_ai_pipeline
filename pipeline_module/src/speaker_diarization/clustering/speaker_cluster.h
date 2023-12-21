@@ -363,7 +363,7 @@ public:
 
         std::sort( large_clusters.begin(), large_clusters.end());
         std::sort( small_clusters.begin(), small_clusters.end());
-
+  
         // re-assign each small cluster to the most similar large cluster based on their respective centroids
         auto large_centroids = Helper::calculateClusterMeans(embeddings, clusters, large_clusters);
         // printf("large_centroids.size()%d\n",large_centroids.size());

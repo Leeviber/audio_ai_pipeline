@@ -1,16 +1,20 @@
+#ifndef SPEAKER_DIARY_SIMPLE
+
 #include <stdio.h>
 #include <chrono>
 #include <string>
 #include <vector>
 #include <map>
-#include <filesystem>
-#include <iostream>
-
-#include "ai_vad.h" // ai based vad
-
-#include "speaker_diary_simple.h"
+#include "speaker_id/speaker/speaker_engine.h"
+#include "speaker_id/frontend/wav.h"
+#include "speaker_diarization/speaker_diarization.h"
 #include "sherpa_stt/offline-recognizer.h"
 #include "sherpa_stt/offline-model-config.h"
+#include "ai_vad.h" // ai based vad
+
+
+#include "speaker_diary_simple.h"
+
 
 void saveArrayToBinaryFile(const std::vector<std::vector<float>> &array, const std::string &filename)
 {
@@ -223,7 +227,7 @@ int main()
     ////////////////////////////////////////////////////
 
     ///////////////// READ and Wrirte WAV /////////////////////////
-    std::string audio_path = "./bin/multi-speaker_1min.wav";
+    std::string audio_path = "./bin/8speaker.wav";
     auto data_reader = wenet::ReadAudioFile(audio_path);
     int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
     int samples = data_reader->num_sample();
@@ -335,3 +339,4 @@ int main()
     // 生成转录时间戳
     generateTimestamps(merged_renumbered_numbers, embedd_segment);
 }
+#endif

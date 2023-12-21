@@ -8,12 +8,23 @@
 
 ## 子模块
 
-- `src/kws`：关键词唤醒（KWS）模块
-- `src/litevad`：活跃说话检测（VAD）模块
-- `src/sherpa_stt`：语音到文字转录（STT）模块
-- `src/tts`：文字到语音转录（TTS）模块
-- `src/speaker_id`：说话人识别模块
-- `src/speaker_diarization`：说话人日志模块
+- `src/kws`：关键词唤醒（KWS）模块 （NPU）
+- `src/litevad`：活跃说话检测（VAD）模块 （CPU）
+- `src/sherpa_stt`：语音到文字转录（STT）模块 （CPU）
+- `src/tts`：文字到语音转录（TTS）模块 （CPU）
+- `src/speaker_id`：说话人识别模块 （NPU&CPU）
+- `src/speaker_diarization`：说话人日志模块 （NPU&CPU）
+
+## 模块数据流
+| Task | Input | Output |
+|------|-------|--------|
+| VAD | 1. Audio (float32, 96ms window length, 0 window shift) | 1. Vad_state (flag, speech start and end state) <br> 2. Speech start and end poison in buffer (samples number) |
+| KWS | 1. Audio (float32, 1500ms window length, 500 window shift) <br> 2. kws_params (mfcc, rknn ctx, embedding) | 1. Flag (is_Spotting for input audio) |
+| STT | 1. Audio (float32, any length audio ≤ 30s, depend on task) | 1. Text |
+| TTS | 1. Text | 1. Raw wav data (Samplerate: 22,050Hz) |
+| Speaker ID | 1. Audio (int16, any length ≤ 30s) | 1. Float32 vector (512,1) |
+| Speaker Diarization | 1. Full audio (float32, 5s window length, 500ms window shift) | 1. Diarization annotation |
+
 
 ## 依赖
 
