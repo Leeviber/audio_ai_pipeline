@@ -79,7 +79,7 @@
 # 模型文件
 
 此处的模型及参数需要从hugging face 上克隆到本地并存放在bin文件夹下
-
+https://huggingface.co/vibeus/sherpa-onnx-int8
  
 在开始之前，请确保已安装 [git-lfs](https://git-lfs.com)。
 
