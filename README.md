@@ -3,7 +3,7 @@
 # VAD-KWS-STT demo
 
 <p align="center">
-  <img src="./pipeline_module/img/vibe_bot_audio_ai.jpg" alt="图片描述" width="1280" height="240">
+  <img src="./pipeline_module/img/vibe_bot.jpg" alt="图片描述" width="1280" height="240">
 </p>
 
 ## 项目描述
