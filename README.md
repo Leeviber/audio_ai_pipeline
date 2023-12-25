@@ -114,8 +114,8 @@ git lfs pull
 
 该项目包含的示例流程：
 
-1. `pipeline_module/kws_stt_online.cc`：将关键词唤醒（KWS）和语音到文字转录（STT）绑定的演示程序。
-2. `pipeline_module/vad_stt_online.cc`：将活跃说话检测（VAD）和语音到文字转录（STT）绑定的演示程序。
-3. `pipeline_module/vad_stt_tts.cc`: 融合了AI VAD， STT，TTS模块。更新：为STT 添加了热词机制
-4. `pipeline_module/speaker_track.cc`: 融合了AI VAD，speaker id模块。
-4. `pipeline_module/speaker_diary_simple.cc`: 融合了AI VAD，speaker id，speaker diarization模块。
+1. `pipeline_module/src/kws_stt_online.cc`：将关键词唤醒（KWS）和语音到文字转录（STT）绑定的演示程序。
+2. `pipeline_module/src/vad_stt_online.cc`：将活跃说话检测（VAD）和语音到文字转录（STT）绑定的演示程序。
+3. `pipeline_module/src/vad_stt_tts.cc`: 融合了AI VAD， STT，TTS模块。更新：为STT 添加了热词机制
+4. `pipeline_module/src/speaker_track.cc`: 融合了AI VAD，speaker id模块。
+4. `pipeline_module/src/speaker_diary_simple.cc`: 融合了AI VAD，speaker id，speaker diarization模块。
