@@ -157,7 +157,9 @@ int main()
     model_paths.push_back(onnx_model_path);
 
 #else
-    std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
+    std::string onnx_model_path = "./bin/voxceleb_resnet152_LM.onnx";
+    // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
+
     model_paths.push_back(onnx_model_path);
 
 #endif
@@ -227,7 +229,7 @@ int main()
     ////////////////////////////////////////////////////
 
     ///////////////// READ and Wrirte WAV /////////////////////////
-    std::string audio_path = "./bin/8speaker.wav";
+    std::string audio_path = "./bin/team_talk_chinese.wav";
     auto data_reader = wenet::ReadAudioFile(audio_path);
     int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
     int samples = data_reader->num_sample();
@@ -272,7 +274,7 @@ int main()
         // 当检测到语音开始
         if (vad_state == 2)
         {
-            seg_start = (j - 1) * test_window_samples; // 记录语音起始位置
+            seg_start = (j-1) * test_window_samples; // 记录语音起始位置
         }
 
         // 当检测到语音结束
@@ -283,6 +285,10 @@ int main()
             // 如果已经有起始位置，进行处理
             if (seg_start != -1)
             {
+                // if(seg_end-seg_start<=8000)
+                // {
+                //     continue;
+                // }
                 // 提取VAD检测到的语音片段
                 std::vector<int16_t> vad_chunk_int16{&enroll_data_int16[seg_start], &enroll_data_int16[seg_end]};
                 std::vector<float> vad_chunk_fp32{&enroll_data_flt32[seg_start], &enroll_data_flt32[seg_end]};
@@ -340,3 +346,5 @@ int main()
     generateTimestamps(merged_renumbered_numbers, embedd_segment);
 }
 #endif
+
+

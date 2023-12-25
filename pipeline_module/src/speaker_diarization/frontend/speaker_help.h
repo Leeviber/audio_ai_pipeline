@@ -277,8 +277,8 @@ public:
 
     // Calculate cosine distances between large and small cluster means
     template <typename T>
-    static std::vector<std::vector<T>> cosineSimilarity( std::vector<std::vector<T>>& largeClusterMeans,
-            std::vector<std::vector<T>>& smallClusterMeans )
+    static std::vector<std::vector<T>> cosineSimilarity(const std::vector<std::vector<T>>& largeClusterMeans,
+            const std::vector<std::vector<T>>& smallClusterMeans )
     {
 
         std::vector<std::vector<T>> centroidsCdist( largeClusterMeans.size(),

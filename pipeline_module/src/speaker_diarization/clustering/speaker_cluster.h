@@ -18,8 +18,9 @@ class Cluster
 private:
     // Those 2 values extracted from config.yaml under
     // ~/.cache/torch/pyannote/models--pyannote--speaker-diarization/snapshots/xxx/
-    float m_threshold = 0.8153814381597874;
-    size_t m_min_cluster_size = 12;
+    float m_threshold = 0.8853814381597874;
+    size_t m_min_cluster_size = 15;
+    float distance_threshold=0.8;
 
 public:
     Cluster()
@@ -365,10 +366,10 @@ public:
         std::sort( small_clusters.begin(), small_clusters.end());
   
         // re-assign each small cluster to the most similar large cluster based on their respective centroids
-        auto large_centroids = Helper::calculateClusterMeans(embeddings, clusters, large_clusters);
+        auto large_centroids = Helper::calculateClusterMeans(normalizedEmbeddings, clusters, large_clusters);
         // printf("large_centroids.size()%d\n",large_centroids.size());
 
-        auto small_centroids = Helper::calculateClusterMeans(embeddings, clusters, small_clusters);
+        auto small_centroids = Helper::calculateClusterMeans(normalizedEmbeddings, clusters, small_clusters);
 
 
         // printf("small_centroids.size()%d\n",small_centroids.size());
@@ -385,7 +386,9 @@ public:
 
             // np.argmin
             for (size_t i = 0; i < centroids_cdist.size(); ++i) {
-                if (centroids_cdist[i][small_k] < minVal && centroids_cdist[i][small_k]<0.6 ) {
+                // if (centroids_cdist[i][small_k] < minVal) {
+                if (centroids_cdist[i][small_k] < minVal && centroids_cdist[i][small_k]<distance_threshold ) {
+
                     minVal = centroids_cdist[i][small_k];
                     large_k = i;
                 }
@@ -408,6 +411,62 @@ public:
         // Find unique clusters and return inverse mapping
         std::vector<int> uniqueClusters;
         std::vector<int> inverseMapping = Helper::findUniqueClusters(clusters, uniqueClusters);
+        // for(int i=0;i<inverseMapping.size();i++)
+        // {
+        //     printf("(index %d, label %d)\n",i,inverseMapping[i]);
+        // }
+
+        // int final_num_clusters = *std::max_element(inverseMapping.begin(), inverseMapping.end()) + 1;
+
+        // printf("final_num_clusters%d\n",final_num_clusters);
+        // std::vector<std::vector<double>> centroids( final_num_clusters, std::vector<double>( 256, 0.0 ));
+        // assert( embeddings.size() == inverseMapping.size());
+
+        // for( int i = 0; i < final_num_clusters; ++i )
+        // {
+        //     size_t mean_count = 0;
+        //     for( size_t j = 0; j < inverseMapping.size(); ++j )
+        //     {
+        //         if( i == inverseMapping[j] )
+        //         {
+        //             mean_count++;
+        //             for( size_t k = 0; k < 256; ++k )
+        //             {
+        //                 centroids[i][k] += embeddings[j][k];
+        //             }
+        //         }
+        //     }
+        //     for( size_t k = 0; k < 256; ++k )
+        //     {
+        //         centroids[i][k] /= mean_count;
+        //     }
+        // }
+
+        // auto dist = Helper::cosineSimilarity(embeddings,centroids);
+        // std::vector<int> res_dist( dist.size());
+    
+        // for( size_t i = 0; i < dist.size(); ++i )
+        // {    
+        //     int max_index = 0;
+        //     double max_value = -1.0 * std::numeric_limits<double>::max();
+
+        //     for( size_t j = 0; j < dist[0].size(); ++j )
+        //     {
+         
+        //             dist[i][j] = 2.0 - dist[i][j];
+        //             if(dist[i][j]>max_value)
+        //             {
+        //                 max_index=j;
+        //                 max_value=dist[i][j];
+        //             }
+      
+
+        //      }
+        //     res_dist[i]=max_index;
+        //     printf("(index %d, label %d)\n",i,max_index);
+
+        // }
+
 
         return inverseMapping;
     }
