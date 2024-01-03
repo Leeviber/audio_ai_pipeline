@@ -107,6 +107,7 @@ set(sherpa_sources
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model-config.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-greedy-search-decoder.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/sherpa_stt.cc
  
 )
 add_library(sherpa-onnx-core ${sherpa_sources})

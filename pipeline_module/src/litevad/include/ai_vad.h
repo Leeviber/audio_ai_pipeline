@@ -6,9 +6,8 @@
 #include <cstring>
 #include <chrono>
 
- 
 #include "onnxruntime_cxx_api.h"
- 
+
 class VadIterator
 {
     // OnnxRuntime resources
@@ -17,25 +16,29 @@ class VadIterator
     std::shared_ptr<Ort::Session> session = nullptr;
     Ort::AllocatorWithDefaultOptions allocator;
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
+    int test_sr = 16000;
+    int test_frame_ms = 96;
+    float test_threshold = 0.85f;
+    int test_min_silence_duration_ms = 100;
+    int test_speech_pad_ms = 0;
 
 public:
     void init_engine_threads(int inter_threads, int intra_threads)
-    {   
+    {
         // The method should be called in each thread/proc in multi-thread/proc work
         session_options.SetIntraOpNumThreads(intra_threads);
         session_options.SetInterOpNumThreads(inter_threads);
         session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
         session_options.SetLogSeverityLevel(3);
-       
     }
 
     void init_onnx_model(const std::string &model_path)
-    {   
-        // Init threads = 1 for 
+    {
+        // Init threads = 1 for
         init_engine_threads(1, 1);
         // Load model
         session = std::make_shared<Ort::Session>(env, model_path.c_str(), session_options);
-     }
+    }
 
     void reset_states()
     {
@@ -48,7 +51,7 @@ public:
     }
 
     // Call it in predict func. if you prefer raw bytes input.
-    void bytes_to_float_tensor(const char *pcm_bytes) 
+    void bytes_to_float_tensor(const char *pcm_bytes)
     {
         std::memcpy(input.data(), pcm_bytes, window_size_samples * sizeof(int16_t));
         for (int i = 0; i < window_size_samples; i++)
@@ -57,11 +60,10 @@ public:
         }
     }
 
-
     int32_t predict(const std::vector<float> &data)
     {
-        // bytes_to_float_tensor(data); 
-        
+        // bytes_to_float_tensor(data);
+
         // Infer
         // Create ort tensors
         input.assign(data.begin(), data.end());
@@ -96,8 +98,8 @@ public:
 
         // Push forward sample index
         current_sample += window_size_samples;
-        
-        // Reset temp_end when > threshold 
+
+        // Reset temp_end when > threshold
         if ((output >= threshold) && (temp_end != 0))
         {
             temp_end = 0;
@@ -108,7 +110,7 @@ public:
             return 1;
             // printf("{ silence: %.3f s }\n", 1.0 * current_sample / sample_rate);
         }
-        // 2) Speaking 
+        // 2) Speaking
         if ((output >= (threshold - 0.15)) && (triggerd == true))
         {
             return 4;
@@ -122,10 +124,9 @@ public:
             speech_start = current_sample - window_size_samples - speech_pad_samples; // minus window_size_samples to get precise start time point.
             // printf("{ start: %.3f s }\n", 1.0 * speech_start / sample_rate);
             return 2;
-
         }
 
-        // 4) End 
+        // 4) End
         if ((output < (threshold - 0.15)) && (triggerd == true))
         {
 
@@ -133,7 +134,7 @@ public:
             {
                 temp_end = current_sample;
             }
-            // a. silence < min_slience_samples, continue speaking 
+            // a. silence < min_slience_samples, continue speaking
             if ((current_sample - temp_end) < min_silence_samples)
             {
                 // printf("{ speaking_4: %.3f s }\n", 1.0 * current_sample / sample_rate);
@@ -142,8 +143,6 @@ public:
             // b. silence >= min_slience_samples, end speaking
             else
             {
-    
-
 
                 speech_end = temp_end ? temp_end + speech_pad_samples : current_sample + speech_pad_samples;
                 temp_end = 0;
@@ -158,26 +157,26 @@ public:
 
 private:
     // model config
-    int64_t window_size_samples;  // Assign when init, support 256 512 768 for 8k; 512 1024 1536 for 16k.
+    int64_t window_size_samples; // Assign when init, support 256 512 768 for 8k; 512 1024 1536 for 16k.
     int sample_rate;
-    int sr_per_ms;  // Assign when init, support 8 or 16
+    int sr_per_ms; // Assign when init, support 8 or 16
     float threshold;
     int min_silence_samples; // sr_per_ms * #ms
-    int speech_pad_samples; // usually a 
+    int speech_pad_samples;  // usually a
 
     // model states
     bool triggerd = false;
-    unsigned int speech_start = 0; 
+    unsigned int speech_start = 0;
     unsigned int speech_end = 0;
     unsigned int temp_end = 0;
-    unsigned int current_sample = 0;    
-    // MAX 4294967295 samples / 8sample per ms / 1000 / 60 = 8947 minutes  
+    unsigned int current_sample = 0;
+    // MAX 4294967295 samples / 8sample per ms / 1000 / 60 = 8947 minutes
     float output;
 
     // Onnx model
     // Inputs
     std::vector<Ort::Value> ort_inputs;
-    
+
     std::vector<const char *> input_node_names = {"input", "sr", "h", "c"};
     std::vector<float> input;
     std::vector<int64_t> sr;
@@ -185,29 +184,26 @@ private:
     std::vector<float> _h;
     std::vector<float> _c;
 
-    int64_t input_node_dims[2] = {}; 
+    int64_t input_node_dims[2] = {};
     const int64_t sr_node_dims[1] = {1};
     const int64_t hc_node_dims[3] = {2, 1, 64};
 
     // Outputs
     std::vector<Ort::Value> ort_outputs;
     std::vector<const char *> output_node_names = {"output", "hn", "cn"};
-    
 
 public:
     // Construction
-    VadIterator(const std::string ModelPath, 
-             int Sample_rate, int frame_size, 
-             float Threshold, int min_silence_duration_ms, int speech_pad_ms) 
+    VadIterator(const std::string ModelPath)
     {
         init_onnx_model(ModelPath);
-        sample_rate = Sample_rate;
+        sample_rate = test_sr;
         sr_per_ms = sample_rate / 1000;
-        threshold = Threshold;
-        min_silence_samples = sr_per_ms * min_silence_duration_ms;
-        speech_pad_samples = sr_per_ms * speech_pad_ms;
-        window_size_samples = frame_size * sr_per_ms;
-        
+        threshold = test_threshold;
+        min_silence_samples = sr_per_ms * test_min_silence_duration_ms;
+        speech_pad_samples = sr_per_ms * test_speech_pad_ms;
+        window_size_samples = test_frame_ms * sr_per_ms;
+
         input.resize(window_size_samples);
         input_node_dims[0] = 1;
         input_node_dims[1] = window_size_samples;
@@ -217,6 +213,5 @@ public:
         sr.resize(1);
         sr[0] = sample_rate;
     }
-
 };
-#endif  // AIVAD_ONNX_MODEL_H_
+#endif // AIVAD_ONNX_MODEL_H_
