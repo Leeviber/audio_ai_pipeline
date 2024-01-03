@@ -55,7 +55,7 @@ int main() {
 
 
 //// Init Sherpa STT module //////////
-  bool using_whisper=true;
+  bool using_whisper=false;
   std::string tokens;
   
   sherpa_onnx::OfflineModelConfig model_config;
@@ -69,16 +69,29 @@ int main() {
     whisper.encoder=encoder_filename;
     whisper.decoder=decoder_filename;
     whisper.language="en";
+    whisper.tail_paddings=800;
 
     model_config.model_type="whisper";
     model_config.whisper=whisper;
   }
   else
   {
-    tokens= "./bin/tokens.txt";
-    std::string encoder_filename="./bin/encoder-epoch-30-avg-4.int8.onnx";
-    std::string decoder_filename="./bin/decoder-epoch-30-avg-4.int8.onnx";
-    std::string joiner_filename="./bin/joiner-epoch-30-avg-4.int8.onnx";
+    // tokens= "./bin/encoder-epoch-30-avg-4-tokens.txt";
+    // std::string encoder_filename="./bin/encoder-epoch-30-avg-4.int8.onnx";
+    // std::string decoder_filename="./bin/decoder-epoch-30-avg-4.int8.onnx";
+    // std::string joiner_filename="./bin/joiner-epoch-30-avg-4.int8.onnx";
+
+    tokens= "./wenet_zh_model/tokens.txt";
+    std::string encoder_filename="./wenet_zh_model/encoder-epoch-12-avg-4.int8.onnx";
+    std::string decoder_filename="./wenet_zh_model/decoder-epoch-12-avg-4.int8.onnx";
+    std::string joiner_filename="./wenet_zh_model/joiner-epoch-12-avg-4.int8.onnx";
+
+    // tokens= "./zipformer_zh/sherpa-onnx-zipformer-multi-zh-hans-2023-9-2/tokens.txt";
+    // std::string encoder_filename="./zipformer_zh/sherpa-onnx-zipformer-multi-zh-hans-2023-9-2/encoder-epoch-20-avg-1.int8.onnx";
+    // std::string decoder_filename="./zipformer_zh/sherpa-onnx-zipformer-multi-zh-hans-2023-9-2/decoder-epoch-20-avg-1.int8.onnx";
+    // std::string joiner_filename="./zipformer_zh/sherpa-onnx-zipformer-multi-zh-hans-2023-9-2/joiner-epoch-20-avg-1.int8.onnx";
+
+
     sherpa_onnx::OfflineTransducerModelConfig transducer;
     transducer.encoder_filename=encoder_filename;
     transducer.decoder_filename=decoder_filename;
@@ -200,7 +213,7 @@ while (params.is_running)
           .count() /
       1000.;
 
-  float duration =params.audio.pcmf32_new.size()/SAMPLE_RATE;
+  float duration =(float)params.audio.pcmf32_new.size()/(float)SAMPLE_RATE;
 
   float rtf = elapsed_seconds / duration;
   fprintf(stderr, "Real time factor (RTF): %.3f / %.3f = %.3f\n",
