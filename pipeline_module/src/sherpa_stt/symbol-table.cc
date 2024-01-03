@@ -1,20 +1,17 @@
 // sherpa-onnx/csrc/symbol-table.cc
 //
+// Copyright (c)  2022-2023  Xiaomi Corporation
 
 #include "symbol-table.h"
 
 #include <cassert>
 #include <fstream>
 #include <sstream>
-#include <strstream>
 
+#include "base64-decode.h"
 #include "onnx-utils.h"
 
-#if __ANDROID_API__ >= 9
-#include "android/asset_manager.h"
-#include "android/asset_manager_jni.h"
-#endif
-
+ 
 namespace sherpa_onnx {
 
 SymbolTable::SymbolTable(const std::string &filename) {
@@ -22,14 +19,7 @@ SymbolTable::SymbolTable(const std::string &filename) {
   Init(is);
 }
 
-#if __ANDROID_API__ >= 9
-SymbolTable::SymbolTable(AAssetManager *mgr, const std::string &filename) {
-  auto buf = ReadFile(mgr, filename);
-
-  std::istrstream is(buf.data(), buf.size());
-  Init(is);
-}
-#endif
+ 
 
 void SymbolTable::Init(std::istream &is) {
   std::string sym;
@@ -44,8 +34,30 @@ void SymbolTable::Init(std::istream &is) {
       }
     }
 
+    // for byte-level BPE
+    // id 0 is blank, id 1 is sos/eos, id 2 is unk
+    if (id >= 3 && id <= 258 && sym.size() == 6 && sym[0] == '<' &&
+        sym[1] == '0' && sym[2] == 'x' && sym[5] == '>') {
+      std::ostringstream os;
+      os << std::hex << std::uppercase << (id - 3);
+
+      if (std::string(sym.data() + 3, sym.data() + 5) == os.str()) {
+        uint8_t i = id - 3;
+        sym = std::string(&i, &i + 1);
+      }
+    }
+
     assert(!sym.empty());
-    assert(sym2id_.count(sym) == 0);
+
+    // for byte bpe, after replacing ▁ with a space, whose ascii is also 0x20,
+    // there is a conflict between the real byte 0x20 and ▁, so we disable
+    // the following check.
+    //
+    // Note: Only id2sym_ matters as we use it to convert ID to symbols.
+    if (sym != " ") {
+      assert(sym2id_.count(sym) == 0);
+    }
+
     assert(id2sym_.count(id) == 0);
 
     sym2id_.insert({sym, id});
@@ -79,6 +91,14 @@ bool SymbolTable::contains(const std::string &sym) const {
 
 std::ostream &operator<<(std::ostream &os, const SymbolTable &symbol_table) {
   return os << symbol_table.ToString();
+}
+
+void SymbolTable::ApplyBase64Decode() {
+  sym2id_.clear();
+  for (auto &p : id2sym_) {
+    p.second = Base64Decode(p.second);
+    sym2id_[p.second] = p.first;
+  }
 }
 
 }  // namespace sherpa_onnx

@@ -154,7 +154,7 @@ int main()
     std::string rknn_model_path = "./bin/Id1_resnet34_LM_main_part.rknn";
     std::string onnx_model_path = "./bin/Id2_resnet34_LM_post.onnx";
     model_paths.push_back(rknn_model_path);
-    model_paths.push_back(onnx_model_path);
+    model_paths.push_back(onnx_model_path); 
 
 #else
     std::string onnx_model_path = "./bin/voxceleb_resnet152_LM.onnx";

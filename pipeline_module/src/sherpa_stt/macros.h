@@ -1,4 +1,3 @@
-
 // sherpa-onnx/csrc/macros.h
 //
 // Copyright      2023  Xiaomi Corporation
@@ -38,10 +37,25 @@
     }                                                                   \
                                                                         \
     dst = atoi(value.get());                                            \
-    if (dst <= 0) {                                                     \
+    if (dst < 0) {                                                      \
       SHERPA_ONNX_LOGE("Invalid value %d for %s", dst, src_key);        \
       exit(-1);                                                         \
     }                                                                   \
+  } while (0)
+
+#define SHERPA_ONNX_READ_META_DATA_WITH_DEFAULT(dst, src_key, default_value) \
+  do {                                                                       \
+    auto value =                                                             \
+        meta_data.LookupCustomMetadataMapAllocated(src_key, allocator);      \
+    if (!value) {                                                            \
+      dst = default_value;                                                   \
+    } else {                                                                 \
+      dst = atoi(value.get());                                               \
+      if (dst < 0) {                                                         \
+        SHERPA_ONNX_LOGE("Invalid value %d for %s", dst, src_key);           \
+        exit(-1);                                                            \
+      }                                                                      \
+    }                                                                        \
   } while (0)
 
 // read a vector of integers
@@ -78,6 +92,24 @@
     }                                                                    \
   } while (0)
 
+// read a vector of strings
+#define SHERPA_ONNX_READ_META_DATA_VEC_STRING(dst, src_key)                   \
+  do {                                                                        \
+    auto value =                                                              \
+        meta_data.LookupCustomMetadataMapAllocated(src_key, allocator);       \
+    if (!value) {                                                             \
+      SHERPA_ONNX_LOGE("%s does not exist in the metadata", src_key);         \
+      exit(-1);                                                               \
+    }                                                                         \
+    SplitStringToVector(value.get(), ",", false, &dst);                       \
+                                                                              \
+    if (dst.empty()) {                                                        \
+      SHERPA_ONNX_LOGE("Invalid value %s for %s. Empty vector!", value.get(), \
+                       src_key);                                              \
+      exit(-1);                                                               \
+    }                                                                         \
+  } while (0)
+
 // Read a string
 #define SHERPA_ONNX_READ_META_DATA_STR(dst, src_key)                    \
   do {                                                                  \
@@ -92,6 +124,22 @@
     if (dst.empty()) {                                                  \
       SHERPA_ONNX_LOGE("Invalid value for %s\n", src_key);              \
       exit(-1);                                                         \
+    }                                                                   \
+  } while (0)
+
+#define SHERPA_ONNX_READ_META_DATA_STR_WITH_DEFAULT(dst, src_key,       \
+                                                    default_value)      \
+  do {                                                                  \
+    auto value =                                                        \
+        meta_data.LookupCustomMetadataMapAllocated(src_key, allocator); \
+    if (!value) {                                                       \
+      dst = default_value;                                              \
+    } else {                                                            \
+      dst = value.get();                                                \
+      if (dst.empty()) {                                                \
+        SHERPA_ONNX_LOGE("Invalid value for %s\n", src_key);            \
+        exit(-1);                                                       \
+      }                                                                 \
     }                                                                   \
   } while (0)
 

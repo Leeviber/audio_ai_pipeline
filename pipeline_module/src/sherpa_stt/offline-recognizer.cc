@@ -8,15 +8,15 @@
 
 #include "file-utils.h"
 #include "macros.h"
-// #include "offline-lm-config.h"
+#include "offline-lm-config.h"
 #include "offline-recognizer-impl.h"
 
 namespace sherpa_onnx {
 
 void OfflineRecognizerConfig::Register(ParseOptions *po) {
-  // feat_config.Register(po);
+  feat_config.Register(po);
   model_config.Register(po);
-  // lm_config.Register(po);
+  lm_config.Register(po);
 
   po->Register(
       "decoding-method", &decoding_method,

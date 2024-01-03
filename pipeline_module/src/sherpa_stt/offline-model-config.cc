@@ -37,6 +37,7 @@ bool OfflineModelConfig::Validate() const {
     SHERPA_ONNX_LOGE("num_threads should be > 0. Given %d", num_threads);
     return false;
   }
+  printf("here3\n");
 
   if (!FileExists(tokens)) {
     SHERPA_ONNX_LOGE("tokens: %s does not exist", tokens.c_str());
@@ -50,7 +51,9 @@ bool OfflineModelConfig::Validate() const {
   // if (!nemo_ctc.model.empty()) {
   //   return nemo_ctc.Validate();
   // }
-
+  if (!whisper.encoder.empty()) {
+    return whisper.Validate();
+  }
   return transducer.Validate();
 }
 

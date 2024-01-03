@@ -9,11 +9,14 @@
 // #include "offline-nemo-enc-dec-ctc-model-config.h"
 // #include "offline-paraformer-model-config.h"
 #include "offline-transducer-model-config.h"
+#include "offline-whisper-model-config.h"
 
 namespace sherpa_onnx {
 
 struct OfflineModelConfig {
   OfflineTransducerModelConfig transducer;
+  OfflineWhisperModelConfig whisper;
+
   // OfflineParaformerModelConfig paraformer;
   // OfflineNemoEncDecCtcModelConfig nemo_ctc;
   // --tokens=./icefall-7/tokens.txt 
@@ -35,13 +38,15 @@ struct OfflineModelConfig {
   //  - nemo_ctc. It is a NeMo CTC model.
   //
   // All other values are invalid and lead to loading the model twice.
-  std::string model_type="transducer";
+  std::string model_type;
 
   OfflineModelConfig() = default;
   OfflineModelConfig(const OfflineTransducerModelConfig &transducer,
+                      const OfflineWhisperModelConfig &whisper,
                      const std::string &tokens, const std::string &bpe_model, const std::string &tokens_type, int32_t num_threads, bool debug,
                      const std::string &provider, const std::string &model_type)
       : transducer(transducer),
+        whisper(whisper),
         tokens(tokens),
         bpe_model(bpe_model),
         tokens_type(tokens_type),

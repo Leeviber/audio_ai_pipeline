@@ -12,18 +12,18 @@
 #include <vector>
 
 #include "sentencepiece_processor.h"  // NOLINT
-#include "sherpa-onnx/csrc/context-graph.h"
-#include "sherpa-onnx/csrc/log.h"
-#include "sherpa-onnx/csrc/macros.h"
-#include "sherpa-onnx/csrc/offline-recognizer-impl.h"
-#include "sherpa-onnx/csrc/offline-recognizer.h"
-#include "sherpa-onnx/csrc/offline-transducer-decoder.h"
-#include "sherpa-onnx/csrc/offline-transducer-greedy-search-decoder.h"
-#include "sherpa-onnx/csrc/offline-transducer-model.h"
-#include "sherpa-onnx/csrc/offline-transducer-modified-beam-search-decoder.h"
-#include "sherpa-onnx/csrc/pad-sequence.h"
-#include "sherpa-onnx/csrc/symbol-table.h"
-#include "sherpa-onnx/csrc/utf-utils.h"
+#include "context-graph.h"
+#include "log.h"
+#include "macros.h"
+#include "offline-recognizer-impl.h"
+#include "offline-recognizer.h"
+#include "offline-transducer-decoder.h"
+#include "offline-transducer-greedy-search-decoder.h"
+#include "offline-transducer-model.h"
+#include "offline-transducer-modified-beam-search-decoder.h"
+#include "pad-sequence.h"
+#include "symbol-table.h"
+#include "utf-utils.h"
 
 namespace sherpa_onnx {
 

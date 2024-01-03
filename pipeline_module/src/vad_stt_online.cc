@@ -6,7 +6,8 @@
 #include <vector>
 #include "sherpa_stt/offline-recognizer.h"
 #include "sherpa_stt/offline-model-config.h"
-#include "sherpa_stt/offline-transducer-model-config.h"
+// #include "sherpa_stt/offline-transducer-model-config.h"
+// #include "sherpa_stt/offline-whisper-model-config.h"
 
 #include "ai_vad.h"       // ai based vad
 
@@ -47,19 +48,47 @@ int main() {
 
 //// Init ALSA and circular buffer////
   snd_pcm_t *capture_handle;
-  const char *device_name ="plughw:5,0";   // using arecord -l to checkout the alsa device name
+  const char *device_name ="plughw:2,0";   // using arecord -l to checkout the alsa device name
   ret = audio_CQ_init(device_name, SAMPLE_RATE, &params, capture_handle);
 //////////////////////////////////////
 
 
 
 //// Init Sherpa STT module //////////
+  bool using_whisper=true;
+  std::string tokens;
+  
+  sherpa_onnx::OfflineModelConfig model_config;
 
+  if(using_whisper)
+  {
+    tokens= "./bin/distil-small.en-tokens.txt";
+    std::string encoder_filename="./bin/distil-small.en-encoder.int8.onnx";
+    std::string decoder_filename="./bin/distil-small.en-decoder.int8.onnx";
+    sherpa_onnx::OfflineWhisperModelConfig whisper;
+    whisper.encoder=encoder_filename;
+    whisper.decoder=decoder_filename;
+    whisper.language="en";
 
-  std::string tokens= "./bin/tokens.txt";
-  std::string encoder_filename="./bin/encoder-epoch-30-avg-4.int8.onnx";
-  std::string decoder_filename="./bin/decoder-epoch-30-avg-4.int8.onnx";
-  std::string joiner_filename="./bin/joiner-epoch-30-avg-4.int8.onnx";
+    model_config.model_type="whisper";
+    model_config.whisper=whisper;
+  }
+  else
+  {
+    tokens= "./bin/tokens.txt";
+    std::string encoder_filename="./bin/encoder-epoch-30-avg-4.int8.onnx";
+    std::string decoder_filename="./bin/decoder-epoch-30-avg-4.int8.onnx";
+    std::string joiner_filename="./bin/joiner-epoch-30-avg-4.int8.onnx";
+    sherpa_onnx::OfflineTransducerModelConfig transducer;
+    transducer.encoder_filename=encoder_filename;
+    transducer.decoder_filename=decoder_filename;
+    transducer.joiner_filename=joiner_filename;
+
+    model_config.model_type="transducer";
+    model_config.transducer=transducer;
+  }
+
+  model_config.tokens=tokens;
 
   // std::string tokens= "./icefall-asr-cv-corpus-13.0-2023-03-09-en-pruned-transducer-stateless7-2023-04-17/data/lang_bpe_500/tokens.txt";
   // std::string encoder_filename="./icefall-asr-cv-corpus-13.0-2023-03-09-en-pruned-transducer-stateless7-2023-04-17/exp/encoder-epoch-60-avg-20.onnx"; 
@@ -67,17 +96,17 @@ int main() {
   // std::string joiner_filename="./icefall-asr-cv-corpus-13.0-2023-03-09-en-pruned-transducer-stateless7-2023-04-17/exp/joiner-epoch-60-avg-20.onnx";
 
 
-  sherpa_onnx::OfflineTransducerModelConfig transducer;
-  transducer.encoder_filename=encoder_filename;
-  transducer.decoder_filename=decoder_filename;
-  transducer.joiner_filename=joiner_filename;
 
-  sherpa_onnx::OfflineModelConfig model_config;
-  model_config.tokens=tokens;
-  model_config.transducer=transducer;
+
+  // sherpa_onnx::OfflineModelConfig model_config;
+  // model_config.tokens=tokens;
+  
+
+
 
   sherpa_onnx::OfflineRecognizerConfig config;
   config.model_config=model_config;
+
   if (!config.Validate()) {
     fprintf(stderr, "Errors in config!\n");
     return -1;

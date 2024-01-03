@@ -24,11 +24,11 @@ struct OfflineRecognizerConfig {
   OfflineModelConfig model_config;
   OfflineLMConfig lm_config;
 
-  std::string decoding_method = "modified_beam_search";
+  std::string decoding_method = "greedy_search";
   int32_t max_active_paths = 4;
 
   std::string hotwords_file;
-  float hotwords_score = 2;
+  float hotwords_score = 1.5;
  
   // only greedy_search is implemented
   // TODO(fangjun): Implement modified_beam_search

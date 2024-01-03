@@ -7,6 +7,8 @@
 // #include "offline-recognizer-ctc-impl.h"
 // #include "offline-recognizer-paraformer-impl.h"
 #include "offline-recognizer-transducer-impl.h"
+#include "offline-recognizer-whisper-impl.h"
+
 #include "onnx-utils.h"
 #include "text-utils.h"
 
@@ -26,8 +28,11 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
     //   return std::make_unique<OfflineRecognizerCtcImpl>(config);
     // } else if (model_type == "whisper") {
     //   return std::make_unique<OfflineRecognizerWhisperImpl>(config);
-    } else {
-      SHERPA_ONNX_LOGE(
+    } else if (model_type == "whisper") {
+      return std::make_unique<OfflineRecognizerWhisperImpl>(config);
+    } 
+     else {
+      printf(
           "Invalid model_type: %s. Trying to load the model to get its type",
           model_type.c_str());
     }
@@ -39,7 +44,9 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
   std::string model_filename;
   if (!config.model_config.transducer.encoder_filename.empty()) {
     model_filename = config.model_config.transducer.encoder_filename;
-  } 
+  } else if (!config.model_config.whisper.encoder.empty()) {
+    model_filename = config.model_config.whisper.encoder;
+  }
   // } else if (!config.model_config.nemo_ctc.model.empty()) {
   //   model_filename = config.model_config.nemo_ctc.model;
   // } else if (!config.model_config.tdnn.model.empty()) {
@@ -97,7 +104,9 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
       model_type == "zipformer2") {
     return std::make_unique<OfflineRecognizerTransducerImpl>(config);
   }
-
+  if (strncmp(model_type.c_str(), "whisper", 7) == 0) {
+    return std::make_unique<OfflineRecognizerWhisperImpl>(config);
+  }
   // if (model_type == "paraformer") {
   //   return std::make_unique<OfflineRecognizerParaformerImpl>(config);
   // }

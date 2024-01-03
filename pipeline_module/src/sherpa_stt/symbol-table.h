@@ -1,5 +1,6 @@
 // sherpa-onnx/csrc/symbol-table.h
 //
+// Copyright (c)  2022-2023  Xiaomi Corporation
 
 #ifndef SHERPA_ONNX_CSRC_SYMBOL_TABLE_H_
 #define SHERPA_ONNX_CSRC_SYMBOL_TABLE_H_
@@ -43,6 +44,9 @@ class SymbolTable {
 
   /// Return true if there is a given symbol in the symbol table.
   bool contains(const std::string &sym) const;
+
+  // for tokens.txt from Whisper
+  void ApplyBase64Decode();
 
  private:
   void Init(std::istream &is);

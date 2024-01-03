@@ -102,7 +102,12 @@ set(sherpa_sources
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/transpose.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/unbind.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/utils.cc
-
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/symbol-table.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/base64-decode.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model-config.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-greedy-search-decoder.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model.cc
+ 
 )
 add_library(sherpa-onnx-core ${sherpa_sources})
 
@@ -237,6 +242,9 @@ else()
   target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static)
   target_link_libraries(sherpa-onnx-core onnxruntime)
 
+  add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
+  target_link_libraries(vad_stt sherpa-onnx-core litevad alsa-core -pthread asound)
+
   # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
   # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lespeak-ng -lasound onnxruntime)
 
@@ -253,8 +261,8 @@ else()
   # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
   # target_link_libraries(diary_demo PUBLIC -pthread litevad speaker speake_diarization onnxruntime)
 
-  add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
-  target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
+  # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
+  # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
  
   # add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
   # target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
@@ -264,10 +272,10 @@ else()
 
   install(
     TARGETS
-    # vad_stt_tts
+    vad_stt
     # id_demo
     # diary_demo
-    diary_demo_simple
+    # diary_demo_simple
     # change_demo
     # change_id_demo
     # track_demo
