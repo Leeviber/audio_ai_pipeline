@@ -28,7 +28,7 @@ class VADChunk {
 public:
     void InitVAD(const std::string& model_path,const int window_size);
     void PushAudioChunk(const std::vector<float>& audio_chunk);
-    void ChunkSTT(STTEngine& stt_interface);
+    void STT(STTEngine& stt_interface);
 
 private:
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;

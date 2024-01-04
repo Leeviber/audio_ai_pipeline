@@ -64,7 +64,7 @@ int main()
       }
     }
 
-    vad_chunk.ChunkSTT(stt_interface);
+    vad_chunk.STT(stt_interface);
 
   }
 

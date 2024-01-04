@@ -83,7 +83,7 @@ void VADChunk::PushAudioChunk(const std::vector<float>& audio_chunk) {
     vad_->AcceptWaveform(audio_chunk.data(), audio_chunk.size());
 }
 
-void VADChunk::ChunkSTT(STTEngine& stt_interface) {
+void VADChunk::STT(STTEngine& stt_interface) {
     while (!vad_->Empty()) {
         auto& segment = vad_->Front();
         std::string text = stt_interface.perform_stt(segment.samples);
