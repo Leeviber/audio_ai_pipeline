@@ -24,11 +24,12 @@ public:
     std::string perform_stt(const std::vector<float> &audioData);
 };
 
-class VADChunkSTT {
+class VADChunkSTT
+{
 public:
-    void InitVAD(const std::string& model_path,const int window_size);
-    void PushAudioChunk(const std::vector<float>& audio_chunk);
-    void STT(STTEngine& stt_interface);
+    void InitVAD(const std::string &model_path, const int window_size);
+    void PushAudioChunk(const std::vector<float> &audio_chunk);
+    void STT(STTEngine &stt_interface);
 
 private:
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
