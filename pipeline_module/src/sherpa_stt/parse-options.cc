@@ -358,7 +358,7 @@ int ParseOptions::Read(int argc, const char *const argv[]) {
     std::ostringstream strm;
     for (int j = 0; j < argc; ++j) strm << Escape(argv[j]) << " ";
     strm << '\n';
-    // SHERPA_ONNX_LOGE("%s", strm.str().c_str());
+    SHERPA_ONNX_LOGE("%s", strm.str().c_str());
   }
   return i;
 }

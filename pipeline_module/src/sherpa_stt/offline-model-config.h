@@ -25,7 +25,7 @@ struct OfflineModelConfig {
   std::string tokens;
   std::string bpe_model;
   std::string tokens_type = "bpe";
-  int32_t num_threads = 1;
+  int32_t num_threads = 4;
   bool debug = false;
   std::string provider = "cpu";
 

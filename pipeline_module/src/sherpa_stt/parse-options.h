@@ -1,11 +1,13 @@
 // sherpa-onnx/csrc/parse-options.h
 //
+// Copyright (c)  2022-2023  Xiaomi Corporation
 //
 // This file is copied and modified from kaldi/src/util/parse-options.h
 
 #ifndef SHERPA_ONNX_CSRC_PARSE_OPTIONS_H_
 #define SHERPA_ONNX_CSRC_PARSE_OPTIONS_H_
 
+#include <cstdint>
 #include <sstream>
 #include <string>
 #include <unordered_map>

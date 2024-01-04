@@ -16,11 +16,7 @@ class VadIterator
     std::shared_ptr<Ort::Session> session = nullptr;
     Ort::AllocatorWithDefaultOptions allocator;
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
-    int test_sr = 16000;
-    int test_frame_ms = 96;
-    float test_threshold = 0.85f;
-    int test_min_silence_duration_ms = 100;
-    int test_speech_pad_ms = 0;
+
 
 public:
     void init_engine_threads(int inter_threads, int intra_threads)
@@ -158,9 +154,14 @@ public:
 private:
     // model config
     int64_t window_size_samples; // Assign when init, support 256 512 768 for 8k; 512 1024 1536 for 16k.
-    int sample_rate;
+    int sample_rate = 16000;
     int sr_per_ms; // Assign when init, support 8 or 16
-    float threshold;
+    float threshold = 0.85f;
+
+    int test_frame_ms = 96;
+    int test_min_silence_duration_ms = 100;
+    int test_speech_pad_ms = 0;
+    
     int min_silence_samples; // sr_per_ms * #ms
     int speech_pad_samples;  // usually a
 
@@ -197,9 +198,7 @@ public:
     VadIterator(const std::string ModelPath)
     {
         init_onnx_model(ModelPath);
-        sample_rate = test_sr;
         sr_per_ms = sample_rate / 1000;
-        threshold = test_threshold;
         min_silence_samples = sr_per_ms * test_min_silence_duration_ms;
         speech_pad_samples = sr_per_ms * test_speech_pad_ms;
         window_size_samples = test_frame_ms * sr_per_ms;
@@ -207,7 +206,6 @@ public:
         input.resize(window_size_samples);
         input_node_dims[0] = 1;
         input_node_dims[1] = window_size_samples;
-        // std::cout << "== Input size" << input.size() << std::endl;
         _h.resize(size_hc);
         _c.resize(size_hc);
         sr.resize(1);

@@ -6,10 +6,11 @@
 #include <cmath>
 #include <math.h>
 
-#include "sherpa_stt/offline-recognizer.h"
-#include "sherpa_stt/offline-model-config.h"
+#include "offline-recognizer.h"
+#include "offline-model-config.h"
+#include "voice-activity-detector.h"
 
-class STTInterface
+class STTEngine
 {
 private:
     std::unique_ptr<sherpa_onnx::OfflineRecognizer> recognizer;
@@ -21,6 +22,16 @@ public:
     void init_stt(bool using_whisper);
 
     std::string perform_stt(const std::vector<float> &audioData);
+};
+
+class VADChunk {
+public:
+    void InitVAD(const std::string& model_path,const int window_size);
+    void PushAudioChunk(const std::vector<float>& audio_chunk);
+    void ChunkSTT(STTEngine& stt_interface);
+
+private:
+    std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
 };
 
 #endif // STT_INTERFACE_H

@@ -1,4 +1,4 @@
-#ifndef SHERPA_ONNX_ALSA_CQ_H_
+// #ifndef SHERPA_ONNX_ALSA_CQ_H_
 
 #include "alsa_cq_buffer.h"
 
@@ -243,4 +243,18 @@ int32_t audio_CQ_clear(online_params *params)
 
     return len;
 }
-#endif  // SHERPA_ONNX_ALSA_CQ_H_
+
+int32_t init_online_audio(online_params *params)
+{
+
+  params->is_running = true;
+
+  online_audio audio_buffer;
+  audio_buffer.pcmf32_new = std::vector<float>(params->n_samples_30s, 0.0f);
+  audio_buffer.CQ_buffer.resize(params->sample_rate * 30);
+  params->audio = audio_buffer;
+  float value;
+
+  return 0;
+}
+// #endif  // SHERPA_ONNX_ALSA_CQ_H_

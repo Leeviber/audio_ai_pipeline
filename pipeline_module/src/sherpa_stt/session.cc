@@ -25,6 +25,11 @@ static Ort::SessionOptions GetSessionOptionsImpl(int32_t num_threads,
   sess_opts.SetIntraOpNumThreads(num_threads);
   sess_opts.SetInterOpNumThreads(num_threads);
 
+  // Other possible options
+  // sess_opts.SetGraphOptimizationLevel(ORT_ENABLE_EXTENDED);
+  // sess_opts.SetLogSeverityLevel(ORT_LOGGING_LEVEL_VERBOSE);
+  // sess_opts.EnableProfiling("profile");
+
   switch (p) {
     case Provider::kCPU:
       break;  // nothing to do for the CPU provider
@@ -36,6 +41,8 @@ static Ort::SessionOptions GetSessionOptionsImpl(int32_t num_threads,
         // The CUDA provider is available, proceed with setting the options
         OrtCUDAProviderOptions options;
         options.device_id = 0;
+        // Default OrtCudnnConvAlgoSearchExhaustive is extremely slow
+        options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
         // set more options on need
         sess_opts.AppendExecutionProvider_CUDA(options);
       } else {
@@ -60,8 +67,7 @@ static Ort::SessionOptions GetSessionOptionsImpl(int32_t num_threads,
   return sess_opts;
 }
 
-// Ort::SessionOptions GetSessionOptions(
-//     const OnlineTransducerModelConfig &config) {
+// Ort::SessionOptions GetSessionOptions(const OnlineModelConfig &config) {
 //   return GetSessionOptionsImpl(config.num_threads, config.provider);
 // }
 
@@ -75,6 +81,14 @@ Ort::SessionOptions GetSessionOptions(const OfflineLMConfig &config) {
 
 // Ort::SessionOptions GetSessionOptions(const OnlineLMConfig &config) {
 //   return GetSessionOptionsImpl(config.lm_num_threads, config.lm_provider);
+// }
+
+Ort::SessionOptions GetSessionOptions(const VadModelConfig &config) {
+  return GetSessionOptionsImpl(config.num_threads, config.provider);
+}
+
+// Ort::SessionOptions GetSessionOptions(const OfflineTtsModelConfig &config) {
+//   return GetSessionOptionsImpl(config.num_threads, config.provider);
 // }
 
 }  // namespace sherpa_onnx

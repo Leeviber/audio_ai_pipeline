@@ -677,8 +677,7 @@ int main() {
     int test_window_samples = test_frame_ms * (test_sr / 1000);
 
     VadIterator ai_vad(
-        path, test_sr, test_frame_ms, test_threshold,
-        test_min_silence_duration_ms, test_speech_pad_ms);
+        path);
  
     ////////////////////////////////////////////////////////////////////////////////
     //// Init ALSA and circular buffer////

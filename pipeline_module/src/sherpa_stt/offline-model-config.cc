@@ -37,8 +37,7 @@ bool OfflineModelConfig::Validate() const {
     SHERPA_ONNX_LOGE("num_threads should be > 0. Given %d", num_threads);
     return false;
   }
-  printf("here3\n");
-
+ 
   if (!FileExists(tokens)) {
     SHERPA_ONNX_LOGE("tokens: %s does not exist", tokens.c_str());
     return false;

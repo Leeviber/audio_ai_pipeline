@@ -107,7 +107,13 @@ set(sherpa_sources
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model-config.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-greedy-search-decoder.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/sherpa_stt.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/vad-model.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/vad-model-config.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/silero-vad-model.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/silero-vad-model-config.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/voice-activity-detector.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/circular-buffer.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/stt_engine.cc
  
 )
 add_library(sherpa-onnx-core ${sherpa_sources})
@@ -193,34 +199,34 @@ if(TARGET_SOC STREQUAL "rk3588")
   add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
   target_link_libraries(vad_stt sherpa-onnx-core litevad alsa-core -pthread)
 
-  add_executable(kws_stt ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_online.cc)
-  target_link_libraries(kws_stt sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB})
+  # add_executable(kws_stt ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_online.cc)
+  # target_link_libraries(kws_stt sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB})
 
-  add_executable(kws_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_tts_online.cc)
-  target_link_libraries(kws_stt_tts sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB} stt_core)
+  # add_executable(kws_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_tts_online.cc)
+  # target_link_libraries(kws_stt_tts sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB} stt_core)
 
-  add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
-  target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lasound onnxruntime)
+  # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
+  # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lasound onnxruntime)
  
   # add_executable(id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_id.cc)
   # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker stt_core)
  
-  add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
-  target_link_libraries(diary_demo PUBLIC alsa-core litevad speaker -lasound -pthread speake_diarization onnxruntime)
+  # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
+  # target_link_libraries(diary_demo PUBLIC alsa-core litevad speaker -lasound -pthread speake_diarization onnxruntime)
  
-  add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
-  target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
+  # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
+  # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
 
   if(SPEAK_ID_NPU)
     add_definitions(-DUSE_NPU)
   endif()
 
-  add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
-  target_link_libraries(track_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
+  # add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
+  # target_link_libraries(track_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
 
 
-  add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
-  target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
+  # add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
+  # target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
 
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
@@ -228,11 +234,11 @@ if(TARGET_SOC STREQUAL "rk3588")
   install(
     TARGETS
     # kws_stt
-    # vad_stt
+    vad_stt
     # vad_stt_tts
     # id_demo
     # diary_demo
-    diary_demo_simple
+    # diary_demo_simple
     # track_demo
     # change_demo
     DESTINATION
