@@ -69,7 +69,7 @@ std::string STTEngine::perform_stt(const std::vector<float> &audioData)
     return text;
 }
 
-void VADChunk::InitVAD(const std::string& model_path, const int window_size) {
+void VADChunkSTT::InitVAD(const std::string& model_path, const int window_size) {
     sherpa_onnx::VadModelConfig vad_config;
     sherpa_onnx::SileroVadModelConfig silero_vad;
     silero_vad.model = model_path;
@@ -79,11 +79,11 @@ void VADChunk::InitVAD(const std::string& model_path, const int window_size) {
     vad_ = std::make_unique<sherpa_onnx::VoiceActivityDetector>(vad_config);
 }
 
-void VADChunk::PushAudioChunk(const std::vector<float>& audio_chunk) {
+void VADChunkSTT::PushAudioChunk(const std::vector<float>& audio_chunk) {
     vad_->AcceptWaveform(audio_chunk.data(), audio_chunk.size());
 }
 
-void VADChunk::STT(STTEngine& stt_interface) {
+void VADChunkSTT::STT(STTEngine& stt_interface) {
     while (!vad_->Empty()) {
         auto& segment = vad_->Front();
         std::string text = stt_interface.perform_stt(segment.samples);

@@ -24,7 +24,7 @@ public:
     std::string perform_stt(const std::vector<float> &audioData);
 };
 
-class VADChunk {
+class VADChunkSTT {
 public:
     void InitVAD(const std::string& model_path,const int window_size);
     void PushAudioChunk(const std::vector<float>& audio_chunk);

@@ -44,7 +44,7 @@ int main()
   int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
   
-  VADChunk vad_chunk;
+  VADChunkSTT vad_chunk;
   vad_chunk.InitVAD(vad_path,vad_frame_ms);
 
   printf("start\n");
