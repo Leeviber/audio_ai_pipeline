@@ -4,37 +4,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fft)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/kws)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/alsa)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/litevad/include)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tts)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tts/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tts/include/espeak-ng)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tts/include/utf8)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/clustering)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/onnxModel)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/frontend)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/segmentation)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/embedding)
-
-set(LITEVAD_SRC
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/energy.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/division_operations.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/get_scaling_square.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/resample.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/resample_48khz.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/resample_by_2.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/resample_by_2_internal.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/signal_processing/resample_fractional.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/vad/vad_core.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/vad/vad_filterbank.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/vad/vad_gmm.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/vad/vad_sp.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/vad/webrtc_vad.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/litevad/src/litevad_api.c
-)
-
-add_library(litevad STATIC ${LITEVAD_SRC})
-target_include_directories(litevad PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/litevad/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/aivad)
 
 if(TARGET_SOC STREQUAL "rk3588")
   # rknn api
@@ -67,69 +46,24 @@ add_library(kiss_fft ${kiss_fft})
 
 set(alsa_cq_sources
   ${CMAKE_CURRENT_SOURCE_DIR}/alsa/alsa_cq_buffer.cc
-)
+) 
 add_library(alsa-core ${alsa_cq_sources})
 target_link_libraries(alsa-core -L$ENV{SHERPA_ONNX_ALSA_LIB_DIR} -lasound)
 
-set(sherpa_sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/cat.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/context-graph.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/features.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/file-utils.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/hypothesis.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-lm-config.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-lm.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-model-config.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-recognizer-impl.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-recognizer.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-rnn-lm.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-stream.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-transducer-greedy-search-decoder.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-transducer-model-config.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-transducer-model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-transducer-modified-beam-search-decoder.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/onnx-utils.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/session.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/packed-sequence.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/pad-sequence.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/parse-options.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/provider.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/resample.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/slice.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/stack.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/symbol-table.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/text-utils.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/transpose.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/unbind.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/utils.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/symbol-table.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/base64-decode.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model-config.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-greedy-search-decoder.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/offline-whisper-model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/vad-model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/vad-model-config.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/silero-vad-model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/silero-vad-model-config.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/voice-activity-detector.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/circular-buffer.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/stt_engine.cc
- 
+file(GLOB sherpa_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/*.cc
 )
 add_library(sherpa-onnx-core ${sherpa_sources})
+target_link_libraries(sherpa-onnx-core onnxruntime kaldi-native-fbank-core sentencepiece-static) 
+ 
+set(ai_engine_src
+  ${CMAKE_CURRENT_SOURCE_DIR}/ai_engine/ai_engine.cc
+) 
+add_library(ai_engine ${ai_engine_src})
+target_link_libraries(ai_engine sherpa-onnx-core)
+# target_include_directories(ai_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
 
-set(CMAKE_CXX_STANDARD 17) # stt require c++ 17
-
-set(stt
-  ${CMAKE_CURRENT_SOURCE_DIR}/tts/piper.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tts/phoneme_ids.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tts/phonemize.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tts/tts.cc
-)
-add_library(stt_core ${stt})
-
-target_link_libraries(stt_core onnxruntime)
-
+add_subdirectory(speaker_id)
 set(speake_diarization_core
   ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/onnxModel/onnx_model.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/clustering/clustering.cpp
@@ -139,18 +73,42 @@ set(speake_diarization_core
 add_library(speake_diarization ${speake_diarization_core})
 target_link_libraries(speake_diarization PUBLIC onnxruntime)
 
+target_link_libraries(ai_engine sherpa-onnx-core speaker speake_diarization)
 
-target_include_directories(stt_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts)
-target_include_directories(stt_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts/include)
-target_include_directories(stt_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts/include/espeak-ng)
-target_include_directories(stt_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts/include/utf8)
+
+
+
+
+
+
+
+
+
+set(CMAKE_CXX_STANDARD 17) # tts require c++ 17
+set(stt
+  ${CMAKE_CURRENT_SOURCE_DIR}/tts/piper.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tts/phoneme_ids.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tts/phonemize.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tts/tts.cc
+)
+add_library(tts_core ${stt})
+
+target_link_libraries(tts_core onnxruntime)
+
+
+
+
+target_include_directories(tts_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts)
+target_include_directories(tts_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts/include)
+target_include_directories(tts_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts/include/espeak-ng)
+target_include_directories(tts_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tts/include/utf8)
 
 if(TARGET_SOC STREQUAL "rk3588")
   add_definitions(-DRK3588)
 
   if(TARGET_ARCH STREQUAL "arm32")
     link_directories(${CMAKE_CURRENT_LIST_DIR}/tts/lib_arm32/)
-    target_link_directories(stt_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_arm32/)
+    target_link_directories(tts_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_arm32/)
 
     set(ESPEAK_LIB_PATH ${CMAKE_CURRENT_LIST_DIR}/tts/lib_arm32/libespeak-ng.so.1.1.51)
     install(
@@ -160,7 +118,7 @@ if(TARGET_SOC STREQUAL "rk3588")
 
   else()
     link_directories(${CMAKE_CURRENT_LIST_DIR}/tts/lib_aarch64/)
-    target_link_directories(stt_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_aarch64/)
+    target_link_directories(tts_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_aarch64/)
 
     set(ESPEAK_LIB_PATH ${CMAKE_CURRENT_LIST_DIR}/tts/lib_aarch64/libespeak-ng.so.1)
     install(
@@ -172,44 +130,35 @@ if(TARGET_SOC STREQUAL "rk3588")
 
 else()
   link_directories(${CMAKE_CURRENT_LIST_DIR}/tts/lib_x86/)
-  target_link_directories(stt_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_x86/)
+  target_link_directories(tts_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_x86/)
 endif()
 
-# if(TARGET_SOC STREQUAL "rk3588")
-# if(TARGET_ARCH STREQUAL "arm32")
-# target_link_directories(stt_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_arm32)
-# else()
-# target_link_directories(stt_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_aarch64)
-# endif()
-# else()
-# target_link_directories(stt_core PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tts/lib_x86)
-# endif()
-target_link_libraries(stt_core
+
+target_link_libraries(tts_core
   espeak-ng
 )
 
-add_subdirectory(speaker_id)
- 
+
+
 if(TARGET_SOC STREQUAL "rk3588")
   
   target_link_libraries(speaker PUBLIC ${RKNN_RT_LIB})
-  target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static) 
-  target_link_libraries(sherpa-onnx-core onnxruntime)
+
 
   add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
-  target_link_libraries(vad_stt sherpa-onnx-core litevad alsa-core -pthread)
+  target_link_libraries(vad_stt ai_engine alsa-core -pthread)
 
   # add_executable(kws_stt ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_online.cc)
   # target_link_libraries(kws_stt sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB})
 
   # add_executable(kws_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_tts_online.cc)
-  # target_link_libraries(kws_stt_tts sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB} stt_core)
+  # target_link_libraries(kws_stt_tts sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB} tts_core)
 
   # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
-  # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lasound onnxruntime)
+  # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread tts_core -lasound onnxruntime)
  
   # add_executable(id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_id.cc)
-  # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker stt_core)
+  # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker tts_core)
  
   # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
   # target_link_libraries(diary_demo PUBLIC alsa-core litevad speaker -lasound -pthread speake_diarization onnxruntime)
@@ -246,17 +195,17 @@ if(TARGET_SOC STREQUAL "rk3588")
   )
 
 else()
-  target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static)
-  target_link_libraries(sherpa-onnx-core onnxruntime)
+  # target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static)
+  # target_link_libraries(sherpa-onnx-core onnxruntime)
 
   add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
-  target_link_libraries(vad_stt sherpa-onnx-core litevad alsa-core -pthread asound)
+  target_link_libraries(vad_stt ai_engine alsa-core -pthread asound)
 
   # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
-  # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread stt_core -lespeak-ng -lasound onnxruntime)
+  # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread tts_core -lespeak-ng -lasound onnxruntime)
 
   # add_executable(id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_id.cc)
-  # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker stt_core)
+  # target_link_libraries(id_demo PUBLIC alsa-core litevad -lasound -pthread speaker tts_core)
  
 
   # add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)

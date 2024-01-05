@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "onnxruntime_cxx_api.h"  // NOLINT
-#include "speaker/speaker_model.h"
+#include "speaker_model.h"
 
 namespace wespeaker {
 

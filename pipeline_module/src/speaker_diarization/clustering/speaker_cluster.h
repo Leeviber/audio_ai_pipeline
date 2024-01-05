@@ -470,7 +470,37 @@ public:
 
         return inverseMapping;
     }
+    std::vector<int> mergeAndRenumber(const std::vector<int> &numbers)
+    {
+        std::unordered_map<int, int> index_map;
+        std::vector<int> unique_numbers;
 
+        // 获取唯一的数字并保留其首次出现的顺序
+        for (int num : numbers)
+        {
+            if (index_map.find(num) == index_map.end())
+            {
+                index_map[num] = static_cast<int>(unique_numbers.size());
+                unique_numbers.push_back(num);
+            }
+        }
+
+        // 根据唯一的数字及其首次出现的顺序进行重新编号
+        std::vector<int> result;
+        for (int num : numbers)
+        {
+            result.push_back(index_map[num]);
+        }
+
+        std::cout << "####################### Speaker diarization Result ###################### " << std::endl;
+
+        for (int i = 0; i < result.size(); i++)
+        {
+            std::cout << "Speaker ID: " << result[i]<<std::endl;
+        }
+
+        return result;
+    }
 
 };
 

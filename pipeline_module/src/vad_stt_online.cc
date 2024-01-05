@@ -10,7 +10,7 @@
 #include <math.h>
 
 #include "alsa_cq_buffer.h"        // ALSA
-#include "sherpa_stt/stt_engine.h" //STT
+#include "ai_engine/ai_engine.h" //STT
 
 int main()
 {
@@ -25,7 +25,7 @@ int main()
     return -1;
   }
   snd_pcm_t *capture_handle;
-  const char *device_name = "plughw:5,0"; // using arecord -l to checkout the alsa device name
+  const char *device_name = "plughw:2,0"; // using arecord -l to checkout the alsa device name
   ret = audio_CQ_init(device_name, params.sample_rate, &params, capture_handle);
   //////////////////////////////////////
 
@@ -41,12 +41,37 @@ int main()
   int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
 
-  VADChunkSTT vad_chunk_stt;
+  VADChunk vad_chunk_stt;
   vad_chunk_stt.InitVAD(vad_path, vad_frame_ms);
 
   printf("start\n");
   //// Main loop for audio real time process //////
   //////////////////////////////////////
+
+    std::vector<std::string> model_paths;
+#ifdef USE_NPU
+    std::string rknn_model_path = "./bin/Id1_resnet34_LM_main_part.rknn";
+    std::string onnx_model_path = "./bin/Id2_resnet34_LM_post.onnx";
+    model_paths.push_back(rknn_model_path);
+    model_paths.push_back(onnx_model_path); 
+
+#else
+    std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
+    // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
+    printf("here\n");
+    model_paths.push_back(onnx_model_path);
+
+#endif  // 其他参数
+  int feat_dim = 80;
+  int sample_rate = 16000;
+  int embedding_size = 256;
+  int SamplesPerChunk = 32000;
+
+  // 创建 SpeakerEngine 对象
+  SpeakerID speaker_id(model_paths, feat_dim, sample_rate, embedding_size, SamplesPerChunk);
+  Cluster cluster;
+  printf("success\n");
+
 
   while (params.is_running)
   {
@@ -61,7 +86,10 @@ int main()
       }
     }
 
-    vad_chunk_stt.STT(stt_interface);
+    // vad_chunk_stt.STT(stt_interface);
+    vad_chunk_stt.ExtractId(speaker_id,cluster);
+    // vad_chunk_stt.process_embedding(speaker_id);
+
   }
 
   ///////////////////////////////////////////

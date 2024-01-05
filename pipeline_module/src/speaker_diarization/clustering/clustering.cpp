@@ -4,6 +4,8 @@
 #include <limits>
 #include <cmath>
 #include <cassert>
+#include <unordered_map>
+
 #include "clustering.h"
 
 struct KVPair

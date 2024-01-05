@@ -10,7 +10,7 @@
 #include "speaker_diarization/speaker_diarization.h"
 #include "sherpa_stt/offline-recognizer.h"
 #include "sherpa_stt/offline-model-config.h"
-#include "ai_vad.h" // ai based vad
+#include "aivad/ai_vad.h" // ai based vad
 
 
 #include "speaker_diary_simple.h"
