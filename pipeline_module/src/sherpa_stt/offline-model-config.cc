@@ -43,9 +43,9 @@ bool OfflineModelConfig::Validate() const {
     return false;
   }
 
-  // if (!paraformer.model.empty()) {
-  //   return paraformer.Validate();
-  // }
+  if (!paraformer.model.empty()) {
+    return paraformer.Validate();
+  }
 
   // if (!nemo_ctc.model.empty()) {
   //   return nemo_ctc.Validate();
@@ -61,7 +61,7 @@ std::string OfflineModelConfig::ToString() const {
 
   os << "OfflineModelConfig(";
   os << "transducer=" << transducer.ToString() << ", ";
-  // os << "paraformer=" << paraformer.ToString() << ", ";
+  os << "paraformer=" << paraformer.ToString() << ", ";
   // os << "nemo_ctc=" << nemo_ctc.ToString() << ", ";
   os << "tokens=\"" << tokens << "\", ";
   os << "num_threads=" << num_threads << ", ";

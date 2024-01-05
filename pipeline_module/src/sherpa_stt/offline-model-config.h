@@ -7,7 +7,7 @@
 #include <string>
 
 // #include "offline-nemo-enc-dec-ctc-model-config.h"
-// #include "offline-paraformer-model-config.h"
+#include "offline-paraformer-model-config.h"
 #include "offline-transducer-model-config.h"
 #include "offline-whisper-model-config.h"
 
@@ -17,7 +17,7 @@ struct OfflineModelConfig {
   OfflineTransducerModelConfig transducer;
   OfflineWhisperModelConfig whisper;
 
-  // OfflineParaformerModelConfig paraformer;
+  OfflineParaformerModelConfig paraformer;
   // OfflineNemoEncDecCtcModelConfig nemo_ctc;
   // --tokens=./icefall-7/tokens.txt 
 

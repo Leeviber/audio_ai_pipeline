@@ -5,7 +5,7 @@
 #include "onnxruntime_cxx_api.h"  // NOLINT
 #include "macros.h"
 // #include "offline-recognizer-ctc-impl.h"
-// #include "offline-recognizer-paraformer-impl.h"
+#include "offline-recognizer-paraformer-impl.h"
 #include "offline-recognizer-transducer-impl.h"
 #include "offline-recognizer-whisper-impl.h"
 
@@ -20,8 +20,8 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
     const auto &model_type = config.model_config.model_type;
     if (model_type == "transducer") {
       return std::make_unique<OfflineRecognizerTransducerImpl>(config);
-    // } else if (model_type == "paraformer") {
-    //   return std::make_unique<OfflineRecognizerParaformerImpl>(config);
+    } else if (model_type == "paraformer") {
+      return std::make_unique<OfflineRecognizerParaformerImpl>(config);
     // } else if (model_type == "nemo_ctc") {
     //   return std::make_unique<OfflineRecognizerCtcImpl>(config);
     // } else if (model_type == "tdnn") {
@@ -46,6 +46,8 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
     model_filename = config.model_config.transducer.encoder_filename;
   } else if (!config.model_config.whisper.encoder.empty()) {
     model_filename = config.model_config.whisper.encoder;
+  } else if (!config.model_config.paraformer.model.empty()) {
+    model_filename = config.model_config.paraformer.model;
   }
   // } else if (!config.model_config.nemo_ctc.model.empty()) {
   //   model_filename = config.model_config.nemo_ctc.model;
@@ -107,9 +109,9 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
   if (strncmp(model_type.c_str(), "whisper", 7) == 0) {
     return std::make_unique<OfflineRecognizerWhisperImpl>(config);
   }
-  // if (model_type == "paraformer") {
-  //   return std::make_unique<OfflineRecognizerParaformerImpl>(config);
-  // }
+  if (model_type == "paraformer") {
+    return std::make_unique<OfflineRecognizerParaformerImpl>(config);
+  }
 
   // if (model_type == "EncDecCTCModelBPE") {
   //   return std::make_unique<OfflineRecognizerCtcImpl>(config);
