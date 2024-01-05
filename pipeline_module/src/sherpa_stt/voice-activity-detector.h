@@ -18,7 +18,7 @@ struct SpeechSegment {
 class VoiceActivityDetector {
  public:
   explicit VoiceActivityDetector(const VadModelConfig &config,
-                                 float buffer_size_in_seconds = 60);
+                                 float buffer_size_in_seconds = 90);
  
   ~VoiceActivityDetector();
 

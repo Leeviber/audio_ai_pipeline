@@ -63,9 +63,6 @@ std::string STTEngine::perform_stt(const std::vector<float> &audioData)
     recognizer->DecodeStream(s.get());
     const std::string text = s->GetResult().text;
 
-    ss.clear();
-    ss_pointers.clear();
-
     return text;
 }
 
@@ -89,8 +86,9 @@ void VADChunkSTT::STT(STTEngine &stt_interface)
     while (!vad_->Empty())
     {
         auto &segment = vad_->Front();
+        printf("stt samples length%d",segment.samples.size());
         std::string text = stt_interface.perform_stt(segment.samples);
-        fprintf(stderr, "TEXT: %s\n----\n", text.c_str());
+        printf("TEXT: %s\n----\n", text.c_str());
         vad_->Pop();
     }
 }

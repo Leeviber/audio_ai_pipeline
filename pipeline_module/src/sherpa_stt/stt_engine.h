@@ -14,8 +14,7 @@ class STTEngine
 {
 private:
     std::unique_ptr<sherpa_onnx::OfflineRecognizer> recognizer;
-    std::vector<std::unique_ptr<sherpa_onnx::OfflineStream>> ss;
-    std::vector<sherpa_onnx::OfflineStream *> ss_pointers;
+
     int sampleRate = 16000;
 
 public:
