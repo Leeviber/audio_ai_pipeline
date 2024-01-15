@@ -1,6 +1,6 @@
 #include "ai_engine.h"
 
-void STTEngine::init_stt(bool using_whisper)
+STTEngine::STTEngine(bool using_whisper)
 {
   std::string tokens;
   sherpa_onnx::OfflineModelConfig model_config;
@@ -67,18 +67,18 @@ void STTEngine::init_stt(bool using_whisper)
   recognizer = std::make_unique<sherpa_onnx::OfflineRecognizer>(config);
 }
 
-std::string STTEngine::perform_stt(const std::vector<float> &audioData)
+std::string STTEngine::perform_stt(const std::vector<float>* audioData)
 {
 
   auto s = recognizer->CreateStream();
-  s->AcceptWaveform(sampleRate, audioData.data(), audioData.size());
+  s->AcceptWaveform(sampleRate, audioData->data(), audioData->size());
   recognizer->DecodeStream(s.get());
   const std::string text = s->GetResult().text;
 
   return text;
 }
 
-void VADChunk::InitVAD(const std::string &model_path, const int window_size)
+VADChunk::VADChunk(const std::string &model_path, const int window_size)
 {
   sherpa_onnx::VadModelConfig vad_config;
   sherpa_onnx::SileroVadModelConfig silero_vad;
@@ -93,32 +93,32 @@ void VADChunk::PushAudioChunk(const std::vector<float> &audio_chunk)
   vad_->AcceptWaveform(audio_chunk.data(), audio_chunk.size());
 }
 
-void VADChunk::STT(STTEngine &stt_interface)
+void VADChunk::STT(STTEngine *stt_interface)
 {
   while (!vad_->Empty())
   {
     auto &segment = vad_->Front();
-    std::string text = stt_interface.perform_stt(segment.samples);
+    std::string text = stt_interface->perform_stt(&segment.samples);
     float start = (float)segment.start / sampleRate;
-    float end = (float)(segment.start + segment.samples.size())/ sampleRate;
+    float end = (float)(segment.start + segment.samples.size()) / sampleRate;
 
-    printf("Time:%.2fs~%.2fs, Text: %s\n----\n", start,end,text.c_str());
+    printf("Time:%.2fs~%.2fs, Text: %s\n----\n", start, end, text.c_str());
     vad_->Pop();
   }
 }
 
-void VADChunk::SpeakerDiarization(STTEngine &stt_interface, SpeakerID &speaker_id_engine, Cluster cst)
+void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
 {
   while (!vad_->Empty())
   {
-    printf("\nNEW CHUNK\n");
+    printf("\n-------------------speaker diaization ------------------\n");
     bool enable_cluster = false;
 
     auto &segment = vad_->Front();
     float start = (float)segment.start / sampleRate;
-    float end = (float)(segment.start + segment.samples.size())/ sampleRate;
+    float end = (float)(segment.start + segment.samples.size()) / sampleRate;
 
-    std::string text = stt_interface.perform_stt(segment.samples);
+    std::string text = stt_interface->perform_stt(&segment.samples);
     texts_.push_back(text);
     std::vector<int16_t> enroll_data_int16(segment.samples.size());
 
@@ -126,44 +126,40 @@ void VADChunk::SpeakerDiarization(STTEngine &stt_interface, SpeakerID &speaker_i
     {
       enroll_data_int16[i] = static_cast<int16_t>(segment.samples[i] * 32767.0f);
     }
-    std::vector<float> chunk_emb(speaker_id_engine.EmbeddingSize(), 0);
-    std::vector<double> chunk_emb_double(speaker_id_engine.EmbeddingSize(), 0);
+    std::vector<float> chunk_emb(speaker_id_engine->EmbeddingSize(), 0);
+    std::vector<double> chunk_emb_double(speaker_id_engine->EmbeddingSize(), 0);
 
-    speaker_id_engine.ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);
-
-    speaker_id_engine.addSegment(text, chunk_emb);
+    speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);
 
     bool is_match = false;
- 
-    int match_idx = speaker_id_engine.findMaxSimilarityKey(chunk_emb);
+
+    int match_idx = speaker_id_engine->FindMaxSimilarityKey(chunk_emb);
 
     if (match_idx != -1)
     {
- 
-      is_match = true;
-      speaker_id_engine.updateAverageEmbedding(match_idx, chunk_emb);
-      diarization_annote[match_idx].addDiarization(start,end,text);
 
-  
+      is_match = true;
+      speaker_id_engine->UpdateAverageEmbedding(match_idx, chunk_emb);
+      diarization_annote[match_idx].addDiarization(start, end, text);
     }
     else
     {
- 
-      speaker_id_engine.addNewKeyValue(chunk_emb);
+
+      speaker_id_engine->AddNewKeyValue(chunk_emb);
 
       std::vector<std::vector<double>> idArray;
-      speaker_id_engine.mapToDoubleArray(idArray);
+      speaker_id_engine->MapToDoubleArray(idArray);
       int min_clu_size = idArray.size();
 
       std::vector<int> clustersRes; // 存储聚类结果
-      cst.custom_clustering(idArray, clustersRes);
+      cst->custom_clustering(idArray, clustersRes);
       std::vector<int> id_list;
 
-      id_list = cst.mergeAndRenumber(clustersRes);
+      id_list = cst->mergeAndRenumber(clustersRes);
 
-      if (id_list.size() <1)
+      if (id_list.size() < 1)
       {
-        diarization_annote.push_back(Diarization(0,{start},{end}, {text}));
+        diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
 
         vad_->Pop();
         printAllDiarizations();
@@ -171,7 +167,7 @@ void VADChunk::SpeakerDiarization(STTEngine &stt_interface, SpeakerID &speaker_i
         break;
       }
 
-      diarization_annote.push_back(Diarization(id_list[-1],{start},{end}, {text}));
+      diarization_annote.push_back(Diarization(id_list[-1], {start}, {end}, {text}));
 
       for (int i = 0; i < diarization_annote.size(); i++)
       {
@@ -183,24 +179,20 @@ void VADChunk::SpeakerDiarization(STTEngine &stt_interface, SpeakerID &speaker_i
     }
     printAllDiarizations();
 
- 
-
     vad_->Pop();
   }
 }
- 
- 
-bool compareDiarization(const VADChunk::Diarization& a, const VADChunk::Diarization& b) {
-    return a.start[0] < b.start[0];
-}
-void VADChunk::printAllDiarizations() {
-    // Iterate over diarization_annote and print each diarization
 
-    for (const auto& diarization : diarization_annote) {
-        for (size_t i = 0; i < diarization.start.size(); ++i) {
-          printf("Speaker %d: [%.2f - %.2f] - \"%s\"\n", diarization.id, diarization.start[i], diarization.end[i], diarization.texts[i].c_str());
-        }
+void VADChunk::printAllDiarizations()
+{
+
+  for (const auto &diarization : diarization_annote)
+  {
+    for (size_t i = 0; i < diarization.start.size(); ++i)
+    {
+      printf("Speaker %d: [%.2f - %.2f] - \"%s\"\n", diarization.id, diarization.start[i], diarization.end[i], diarization.texts[i].c_str());
     }
+  }
 }
 
 SpeakerID::SpeakerID(const std::vector<std::string> &models_path,
@@ -208,8 +200,7 @@ SpeakerID::SpeakerID(const std::vector<std::string> &models_path,
 {
   const int kNumGemmThreads = 4;
   embedding_size_ = embedding_size;
-  // per_chunk_samples_ = SamplesPerChunk;
-  // sample_rate_ = sample_rate;
+
   feature_config_ = std::make_shared<wenet::FeaturePipelineConfig>(
       80, sample_rate_);
   feature_pipeline_ =
@@ -252,12 +243,6 @@ void SpeakerID::ApplyMean(std::vector<std::vector<float>> *feat,
   }
 }
 
-// 1. full mode
-// When per_chunk_samples_ <= 0, extract the features of the full audio.
-// 2. chunk by chunk
-// Extract audio features chunk by chunk, with 198 frames for each chunk.
-// If the last chunk is less than 198 frames,
-// concatenate the head frame to the tail.
 void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
                                std::vector<std::vector<std::vector<float>>> *chunks_feat)
 {
@@ -268,7 +253,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
         data, data + data_size));
     if (per_chunk_samples_ <= 0)
     {
-      // full mode
       feature_pipeline_->Read(feature_pipeline_->num_frames(), &chunk_feat);
       feature_pipeline_->Reset();
       chunks_feat->emplace_back(chunk_feat);
@@ -276,7 +260,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
     }
     else
     {
-      // NOTE(cdliang): extract feature with chunk by chunk
       int num_chunk_frames_ = 1 + ((
                                        per_chunk_samples_ - sample_rate_ / 1000 * 25) /
                                    (sample_rate_ / 1000 * 10));
@@ -292,7 +275,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
         chunks_feat->emplace_back(chunk_feat);
         chunk_feat.clear();
       }
-      // last_chunk
       int last_frames = feature_pipeline_->NumQueuedFrames();
 
       if (last_frames > 0)
@@ -300,7 +282,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
         feature_pipeline_->Read(last_frames, &chunk_feat);
         if (chunks_feat->empty())
         {
-          // wav_len < chunk_len
           int num_pad = static_cast<int>(num_chunk_frames_ / last_frames);
           for (int i = 1; i < num_pad; i++)
           {
@@ -316,7 +297,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
                             (*chunks_feat)[0].begin(),
                             (*chunks_feat)[0].begin() + num_chunk_frames_ - chunk_feat.size());
         }
-        // CHECK_EQ(chunk_feat.size(), num_chunk_frames_);
         chunks_feat->emplace_back(chunk_feat);
         chunk_feat.clear();
       }
@@ -325,7 +305,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
   }
   else
   {
-    // LOG(ERROR) << "Input is nullptr!";
     printf("input is null");
   }
 }
@@ -333,7 +312,6 @@ void SpeakerID::ExtractFeature(const int16_t *data, int data_size,
 void SpeakerID::ExtractEmbedding(const int16_t *data, int data_size,
                                  std::vector<float> *avg_emb)
 {
-  // chunks_feat: [nchunk, T, D]
 
   std::vector<std::vector<std::vector<float>>> chunks_feat;
   this->ExtractFeature(data, data_size, &chunks_feat);
@@ -378,52 +356,8 @@ float SpeakerID::CosineSimilarity(const std::vector<float> &emb1,
                   std::numeric_limits<float>::epsilon());
   return dot;
 }
-void SpeakerID::addSegment(const std::string &text, const std::vector<float> &embedding)
-{
-  segments.push_back(EmbedSegment(text, embedding));
-}
 
-void SpeakerID::addEmbedSegmentsToMap(const std::vector<int> &ids)
-{
-
-  // 确保 ids 和 embedSegments 的大小一致
-  size_t size = std::min(ids.size(), segments.size());
-
-  for (size_t i = 0; i < size; ++i)
-  {
-    idMap[ids[i]].push_back(segments[i]);
-  }
-
-  for (const auto &pair : idMap)
-  {
-    int id = pair.first;
-    const std::vector<EmbedSegment> &embedSegments = pair.second;
-
-    if (!embedSegments.empty())
-    {
-      size_t embeddingSize = embedSegments.front().embedding.size();
-      averageEmbeddings[id].resize(embeddingSize, 0.0);
-
-      for (const auto &embedSegment : embedSegments)
-      {
-        // 累加每个 EmbedSegment 的 embedding
-        for (size_t i = 0; i < embeddingSize; ++i)
-        {
-          averageEmbeddings[id][i] += embedSegment.embedding[i];
-        }
-      }
-
-      // 计算平均值
-      for (size_t i = 0; i < embeddingSize; ++i)
-      {
-        averageEmbeddings[id][i] /= embedSegments.size();
-      }
-    }
-  }
-  return;
-}
-
-int SpeakerID::findMaxSimilarityKey(const std::vector<float> &inputVector)
+int SpeakerID::FindMaxSimilarityKey(const std::vector<float> &inputVector)
 {
   float maxSimilarity = 0.4;
   int maxKey = -1;
@@ -447,7 +381,7 @@ int SpeakerID::findMaxSimilarityKey(const std::vector<float> &inputVector)
   return maxKey;
 }
 
-void SpeakerID::mapToDoubleArray(std::vector<std::vector<double>> &outputArray)
+void SpeakerID::MapToDoubleArray(std::vector<std::vector<double>> &outputArray)
 {
   // 清空输出数组
   outputArray.clear();
@@ -467,7 +401,7 @@ void SpeakerID::mapToDoubleArray(std::vector<std::vector<double>> &outputArray)
   }
 }
 
-void SpeakerID::updateAverageEmbedding(int key, const std::vector<float> &newEmbedding)
+void SpeakerID::UpdateAverageEmbedding(int key, const std::vector<float> &newEmbedding)
 {
   auto it = averageEmbeddings.find(key);
 
@@ -498,7 +432,7 @@ void SpeakerID::updateAverageEmbedding(int key, const std::vector<float> &newEmb
     averageEmbeddings[key] = newEmbedding;
   }
 }
-void SpeakerID::addNewKeyValue(const std::vector<float> &newValue)
+void SpeakerID::AddNewKeyValue(const std::vector<float> &newValue)
 {
   int newKey = static_cast<int>(averageEmbeddings.size());
 

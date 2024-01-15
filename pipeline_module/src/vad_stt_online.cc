@@ -30,10 +30,8 @@ int main()
   //////////////////////////////////////
 
   //// Init Sherpa STT module //////////
-
-  STTEngine stt_interface;
   bool using_whisper = false;
-  stt_interface.init_stt(using_whisper);
+  STTEngine stt_interface(using_whisper);
   //////////////////////////////////////
 
   /////////// Init chunk VAD //////////////////
@@ -41,9 +39,8 @@ int main()
   int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
 
-  VADChunk vad_chunk_stt;
-  vad_chunk_stt.InitVAD(vad_path, vad_frame_ms);
-
+  VADChunk vad_chunk_stt(vad_path, vad_frame_ms);
+ 
   //// Main loop for audio real time process //////
   //////////////////////////////////////
 
@@ -63,7 +60,7 @@ int main()
       }
     }
 
-    vad_chunk_stt.STT(stt_interface);
+    vad_chunk_stt.STT(&stt_interface);
   }
 
   ///////////////////////////////////////////
