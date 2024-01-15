@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <unordered_map>
 
+
+
 #include "speaker_help.h"
 #include "clustering.h"
 
@@ -20,7 +22,7 @@ private:
     // ~/.cache/torch/pyannote/models--pyannote--speaker-diarization/snapshots/xxx/
     float m_threshold = 0.8853814381597874;
     size_t m_min_cluster_size = 15;
-    float distance_threshold=0.8;
+    float distance_threshold=0.6;
 
 public:
     Cluster()
@@ -77,9 +79,9 @@ public:
         // auto filteredEmbeddings = filter_embeddings( embeddings, chunk_idx, speaker_idx );
 
         size_t num_embeddings = embeddings.size();
-        // printf("num_embeddings%d\n",num_embeddings);
+        printf("num_embeddings%d\n",num_embeddings);
         set_num_clusters( static_cast<int>( num_embeddings ), num_clusters, min_clusters, max_clusters );
-
+        printf("max_clusters%d\n",max_clusters);
         // do NOT apply clustering when min_clusters = max_clusters = 1
         if( max_clusters < 2 )
         {
@@ -288,9 +290,9 @@ public:
 
         // heuristic to reduce self.min_cluster_size when num_embeddings is very small
         // (0.1 value is kind of arbitrary, though)
-        m_min_cluster_size = std::min( m_min_cluster_size, std::max(static_cast<size_t>( 1 ),
-                    static_cast<size_t>( round(0.1 * num_embeddings))));
-        m_min_cluster_size=2;
+        // m_min_cluster_size = std::min( m_min_cluster_size, std::max(static_cast<size_t>( 1 ),
+        //             static_cast<size_t>( round(0.1 * num_embeddings))));
+        m_min_cluster_size=1;
         // printf("m_min_cluster_size%d",m_min_cluster_size);
         // linkage function will complain when there is just one embedding to cluster
         //if( num_embeddings == 1 ) 
@@ -492,16 +494,28 @@ public:
             result.push_back(index_map[num]);
         }
 
-        std::cout << "####################### Speaker diarization Result ###################### " << std::endl;
-
-        for (int i = 0; i < result.size(); i++)
-        {
-            std::cout << "Speaker ID: " << result[i]<<std::endl;
-        }
-
         return result;
     }
+    void generateTimestamps(const std::vector<int> &renumbered_numbers, const std::vector<std::string> &texts)
+    {
+        printf("##### Speaker Diarization #####\n");
 
+        for (int i = 0; i < renumbered_numbers.size(); i++)
+        {
+            printf("Speaker ID: %d, text %s \n" ,renumbered_numbers[i],texts[i].c_str());
+        }
+ 
+    }
+    void generateLabel(const std::vector<int> &renumbered_numbers)
+    {
+        printf("##### Speaker Diarization #####\n");
+
+        for (int i = 0; i < renumbered_numbers.size(); i++)
+        {
+            printf("Speaker ID: %d  \n" ,renumbered_numbers[i] );
+        }
+ 
+    }
 };
 
 #endif

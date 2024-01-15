@@ -32,7 +32,7 @@ int main()
   //// Init Sherpa STT module //////////
 
   STTEngine stt_interface;
-  bool using_whisper = true;
+  bool using_whisper = false;
   stt_interface.init_stt(using_whisper);
   //////////////////////////////////////
 
@@ -87,7 +87,7 @@ int main()
     }
 
     // vad_chunk_stt.STT(stt_interface);
-    vad_chunk_stt.ExtractId(speaker_id,cluster);
+    vad_chunk_stt.ExtractId(stt_interface,speaker_id,cluster);
     // vad_chunk_stt.process_embedding(speaker_id);
 
   }
