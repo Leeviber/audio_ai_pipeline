@@ -68,7 +68,7 @@ int main()
   int SamplesPerChunk = 32000;
 
   // 创建 SpeakerEngine 对象
-  SpeakerID speaker_id(model_paths, feat_dim, sample_rate, embedding_size, SamplesPerChunk);
+  SpeakerID speaker_id(model_paths, embedding_size);
   Cluster cluster;
   printf("success\n");
 
@@ -85,7 +85,6 @@ int main()
       }
     }
 
-    // vad_chunk_stt.STT(stt_interface);
     vad_chunk_stt.SpeakerDiarization(stt_interface, speaker_id, cluster);
   }
 

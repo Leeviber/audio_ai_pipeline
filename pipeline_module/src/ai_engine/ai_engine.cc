@@ -204,22 +204,14 @@ void VADChunk::printAllDiarizations() {
 }
 
 SpeakerID::SpeakerID(const std::vector<std::string> &models_path,
-                     const int feat_dim,
-                     const int sample_rate,
-                     const int embedding_size,
-                     const int SamplesPerChunk)
+                     const int embedding_size)
 {
-  // NOTE(cdliang): default num_threads = 1
   const int kNumGemmThreads = 4;
-  // LOG(INFO) << "Reading model " << model_path;
   embedding_size_ = embedding_size;
-  // LOG(INFO) << "Embedding size: " << embedding_size_;
-  per_chunk_samples_ = SamplesPerChunk;
-  // LOG(INFO) << "per_chunk_samples: " << per_chunk_samples_;
-  sample_rate_ = sample_rate;
-  // LOG(INFO) << "Sample rate: " << sample_rate_;
+  // per_chunk_samples_ = SamplesPerChunk;
+  // sample_rate_ = sample_rate;
   feature_config_ = std::make_shared<wenet::FeaturePipelineConfig>(
-      feat_dim, sample_rate);
+      80, sample_rate_);
   feature_pipeline_ =
       std::make_shared<wenet::FeaturePipeline>(*feature_config_);
   feature_pipeline_->Reset();

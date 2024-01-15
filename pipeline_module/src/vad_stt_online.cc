@@ -48,28 +48,7 @@ int main()
   //// Main loop for audio real time process //////
   //////////////////////////////////////
 
-  std::vector<std::string> model_paths;
-#ifdef USE_NPU
-  std::string rknn_model_path = "./bin/Id1_resnet34_LM_main_part.rknn";
-  std::string onnx_model_path = "./bin/Id2_resnet34_LM_post.onnx";
-  model_paths.push_back(rknn_model_path);
-  model_paths.push_back(onnx_model_path);
 
-#else
-  std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
-  // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
-  printf("here\n");
-  model_paths.push_back(onnx_model_path);
-
-#endif // 其他参数
-  int feat_dim = 80;
-  int sample_rate = 16000;
-  int embedding_size = 256;
-  int SamplesPerChunk = 32000;
-
-  // 创建 SpeakerEngine 对象
-  SpeakerID speaker_id(model_paths, feat_dim, sample_rate, embedding_size, SamplesPerChunk);
-  Cluster cluster;
   printf("success\n");
 
   while (params.is_running)
@@ -86,7 +65,6 @@ int main()
     }
 
     vad_chunk_stt.STT(stt_interface);
-    // vad_chunk_stt.SpeakerDiarization(stt_interface, speaker_id, cluster);
   }
 
   ///////////////////////////////////////////

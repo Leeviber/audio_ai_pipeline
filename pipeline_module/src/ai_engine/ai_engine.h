@@ -51,10 +51,7 @@ public:
     void addNewKeyValue(const std::vector<float> &newValue);
 
     explicit SpeakerID(const std::vector<std::string> &models_path,
-                       const int feat_dim,
-                       const int sample_rate,
-                       const int embedding_size,
-                       const int SamplesPerChunk);
+                     const int embedding_size);
 
     // return embedding_size
     int EmbeddingSize();

@@ -79,9 +79,7 @@ public:
         // auto filteredEmbeddings = filter_embeddings( embeddings, chunk_idx, speaker_idx );
 
         size_t num_embeddings = embeddings.size();
-        printf("num_embeddings%d\n",num_embeddings);
         set_num_clusters( static_cast<int>( num_embeddings ), num_clusters, min_clusters, max_clusters );
-        printf("max_clusters%d\n",max_clusters);
         // do NOT apply clustering when min_clusters = max_clusters = 1
         if( max_clusters < 2 )
         {
@@ -92,18 +90,7 @@ public:
             return;
         }
         // printf("min_clusters%d, max_clusters%d,num_clusters%d \n",min_clusters,max_clusters,num_clusters);
-
-        // python: train_clusters = self.cluster(
         clusterRes = cluster( embeddings, min_clusters, max_clusters, num_clusters );
-        // for(int i=0;i<clusterRes.size();i++)
-        // {
-        //     printf("clusterRes%d \n",clusterRes[i]);
-        // }
-        // printf("output num_clusters%d \n",num_clusters);
-
-
-        // python: hard_clusters, soft_clusters = self.assign_embeddings(
-        // assign_embeddings( embeddings, chunk_idx, speaker_idx, clusterRes, hard_clusters );
     }
 
     // Assign embeddings to the closest centroid
