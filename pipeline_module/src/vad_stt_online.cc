@@ -44,12 +44,11 @@ int main()
   VADChunk vad_chunk_stt;
   vad_chunk_stt.InitVAD(vad_path, vad_frame_ms);
 
-  printf("start\n");
   //// Main loop for audio real time process //////
   //////////////////////////////////////
 
 
-  printf("success\n");
+  printf("Init success\n");
 
   while (params.is_running)
   {

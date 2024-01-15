@@ -62,6 +62,7 @@ std::unique_ptr<OfflineRecognizerImpl> OfflineRecognizerImpl::Create(
   }
 
   auto buf = ReadFile(model_filename);
+  sess_opts.SetLogSeverityLevel(3);
 
   auto encoder_sess =
       std::make_unique<Ort::Session>(env, buf.data(), buf.size(), sess_opts);

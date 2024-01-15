@@ -58,19 +58,15 @@ int main()
 #else
   std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
   // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
-  printf("here\n");
   model_paths.push_back(onnx_model_path);
 
 #endif // 其他参数
-  int feat_dim = 80;
-  int sample_rate = 16000;
   int embedding_size = 256;
-  int SamplesPerChunk = 32000;
 
   // 创建 SpeakerEngine 对象
   SpeakerID speaker_id(model_paths, embedding_size);
   Cluster cluster;
-  printf("success\n");
+  printf("Init success\n");
 
   while (params.is_running)
   {
