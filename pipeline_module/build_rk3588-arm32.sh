@@ -42,7 +42,7 @@ cmake \
   -DSHERPA_ONNX_ENABLE_JNI=OFF \
   -DSHERPA_ONNX_ENABLE_C_API=OFF \
   -DSHERPA_ONNX_ENABLE_WEBSOCKET=OFF \
-  -DCMAKE_TOOLCHAIN_FILE=arm-linux-gnueabihf.toolchain.cmake  \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/arm-linux-gnueabihf.toolchain.cmake  \
   ..
 
 make -j4
