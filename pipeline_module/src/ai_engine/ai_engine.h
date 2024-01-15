@@ -45,11 +45,11 @@ public:
 
     void addSegment(const std::string &text, const std::vector<float> &embedding);
     void addEmbedSegmentsToMap(const std::vector<int> &ids);
-    int  findMaxSimilarityKey(const std::vector<float>& inputVector);
-    void mapToDoubleArray(std::vector<std::vector<double>>& outputArray);
-    void updateAverageEmbedding(int key, const std::vector<float>& newEmbedding);
-    void addNewKeyValue(const std::vector<float>& newValue);
- 
+    int findMaxSimilarityKey(const std::vector<float> &inputVector);
+    void mapToDoubleArray(std::vector<std::vector<double>> &outputArray);
+    void updateAverageEmbedding(int key, const std::vector<float> &newEmbedding);
+    void addNewKeyValue(const std::vector<float> &newValue);
+
     explicit SpeakerID(const std::vector<std::string> &models_path,
                        const int feat_dim,
                        const int sample_rate,
@@ -85,7 +85,6 @@ private:
     int sample_rate_ = 16000;
     std::vector<EmbedSegment> segments;
     std::map<int, std::vector<EmbedSegment>> idMap;
-
 };
 
 class VADChunk
@@ -94,13 +93,18 @@ public:
     struct Diarization
     {
         int id;
+        std::vector<float> start;
+        std::vector<float> end;
         std::vector<std::string> texts;
 
         // 构造函数，允许提供初始值
-        Diarization(int newId, const std::vector<std::string>& newTexts) : id(newId), texts(newTexts) {}
+        Diarization(int newId,const std::vector<float> &newStart,const std::vector<float> &newEnd, const std::vector<std::string> &newTexts) : id(newId), start(newStart),end(newEnd), texts(newTexts) {}
 
         // 成员函数，用于向 texts 向量中添加新的元素
-        void addText(const std::string& newText) {
+        void addDiarization(const float newStart,const float newEnd,const std::string &newText)
+        {
+            start.push_back(newStart);
+            end.push_back(newEnd);
             texts.push_back(newText);
         }
     };
@@ -110,15 +114,14 @@ public:
     void InitVAD(const std::string &model_path, const int window_size);
     void PushAudioChunk(const std::vector<float> &audio_chunk);
     void STT(STTEngine &stt_interface);
-    void ExtractId(STTEngine &stt_interface, SpeakerID &speaker_id_engine, Cluster cluster);
-    void process_embedding(SpeakerID &speaker_id_engine);
-
+    void SpeakerDiarization(STTEngine &stt_interface, SpeakerID &speaker_id_engine, Cluster cluster);
+    void printAllDiarizations();
 private:
+    int sampleRate = 16000;
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
     std::vector<std::vector<double>> embeddings_;
     std::vector<std::string> texts_;
     std::map<int, std::vector<std::string>> textIdMap;
-
 };
 
 #endif // STT_INTERFACE_H

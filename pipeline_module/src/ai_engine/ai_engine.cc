@@ -98,14 +98,16 @@ void VADChunk::STT(STTEngine &stt_interface)
   while (!vad_->Empty())
   {
     auto &segment = vad_->Front();
-    printf("stt samples length%d", segment.samples.size());
     std::string text = stt_interface.perform_stt(segment.samples);
-    printf("TEXT: %s\n----\n", text.c_str());
+    float start = (float)segment.start / sampleRate;
+    float end = (float)(segment.start + segment.samples.size())/ sampleRate;
+
+    printf("Time:%.2fs~%.2fs, Text: %s\n----\n", start,end,text.c_str());
     vad_->Pop();
   }
 }
 
-void VADChunk::ExtractId(STTEngine &stt_interface, SpeakerID &speaker_id_engine, Cluster cst)
+void VADChunk::SpeakerDiarization(STTEngine &stt_interface, SpeakerID &speaker_id_engine, Cluster cst)
 {
   while (!vad_->Empty())
   {
@@ -113,6 +115,9 @@ void VADChunk::ExtractId(STTEngine &stt_interface, SpeakerID &speaker_id_engine,
     bool enable_cluster = false;
 
     auto &segment = vad_->Front();
+    float start = (float)segment.start / sampleRate;
+    float end = (float)(segment.start + segment.samples.size())/ sampleRate;
+
     std::string text = stt_interface.perform_stt(segment.samples);
     texts_.push_back(text);
     std::vector<int16_t> enroll_data_int16(segment.samples.size());
@@ -129,36 +134,21 @@ void VADChunk::ExtractId(STTEngine &stt_interface, SpeakerID &speaker_id_engine,
     speaker_id_engine.addSegment(text, chunk_emb);
 
     bool is_match = false;
-    bool is_update = false;
-
+ 
     int match_idx = speaker_id_engine.findMaxSimilarityKey(chunk_emb);
 
     if (match_idx != -1)
     {
-
+ 
       is_match = true;
-
       speaker_id_engine.updateAverageEmbedding(match_idx, chunk_emb);
-      diarization_annote[match_idx].addText(text);
+      diarization_annote[match_idx].addDiarization(start,end,text);
 
-      std::vector<std::vector<double>> idArray;
-      speaker_id_engine.mapToDoubleArray(idArray);
-      int min_clu_size = idArray.size();
-      std::vector<int> clustersRes; // 存储聚类结果
-      cst.custom_clustering(idArray, clustersRes);
-      std::vector<int> id_list;
-      id_list = cst.mergeAndRenumber(clustersRes);
-
-      for (int i = 0; i < diarization_annote.size(); i++)
-      {
-        if (diarization_annote[i].id != id_list[i])
-        {
-          diarization_annote[i].id = id_list[i];
-        }
-      }
+  
     }
     else
     {
+ 
       speaker_id_engine.addNewKeyValue(chunk_emb);
 
       std::vector<std::vector<double>> idArray;
@@ -171,16 +161,17 @@ void VADChunk::ExtractId(STTEngine &stt_interface, SpeakerID &speaker_id_engine,
 
       id_list = cst.mergeAndRenumber(clustersRes);
 
-      if (id_list.size() < 1)
+      if (id_list.size() <1)
       {
-        diarization_annote.push_back(Diarization(0, {text}));
+        diarization_annote.push_back(Diarization(0,{start},{end}, {text}));
 
         vad_->Pop();
+        printAllDiarizations();
 
         break;
       }
 
-      diarization_annote.push_back(Diarization(id_list[-1], {text}));
+      diarization_annote.push_back(Diarization(id_list[-1],{start},{end}, {text}));
 
       for (int i = 0; i < diarization_annote.size(); i++)
       {
@@ -190,23 +181,26 @@ void VADChunk::ExtractId(STTEngine &stt_interface, SpeakerID &speaker_id_engine,
         }
       }
     }
+    printAllDiarizations();
 
-    for (const auto &diarization : diarization_annote)
-    {
-      std::cout << "ID: " << diarization.id << ", Texts: ";
-      for (const auto &text : diarization.texts)
-      {
-        std::cout << text << " ";
-      }
-      std::cout << std::endl;
-    }
+ 
 
     vad_->Pop();
   }
 }
-void VADChunk::process_embedding(SpeakerID &speaker_id_engine)
-{
-  printf("length of embedding %d\n", embeddings_.size());
+ 
+ 
+bool compareDiarization(const VADChunk::Diarization& a, const VADChunk::Diarization& b) {
+    return a.start[0] < b.start[0];
+}
+void VADChunk::printAllDiarizations() {
+    // Iterate over diarization_annote and print each diarization
+
+    for (const auto& diarization : diarization_annote) {
+        for (size_t i = 0; i < diarization.start.size(); ++i) {
+          printf("Speaker %d: [%.2f - %.2f] - \"%s\"\n", diarization.id, diarization.start[i], diarization.end[i], diarization.texts[i].c_str());
+        }
+    }
 }
 
 SpeakerID::SpeakerID(const std::vector<std::string> &models_path,

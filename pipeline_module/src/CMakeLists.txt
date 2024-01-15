@@ -148,6 +148,9 @@ if(TARGET_SOC STREQUAL "rk3588")
   add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
   target_link_libraries(vad_stt ai_engine alsa-core -pthread)
 
+  add_executable(vad_sd ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_online.cc)
+  target_link_libraries(vad_sd ai_engine alsa-core -pthread)
+
   # add_executable(kws_stt ${CMAKE_CURRENT_SOURCE_DIR}/kws_stt_online.cc)
   # target_link_libraries(kws_stt sherpa-onnx-core kws-core alsa-core -pthread ${RKNN_RT_LIB})
 
@@ -201,6 +204,10 @@ else()
   add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
   target_link_libraries(vad_stt ai_engine alsa-core -pthread asound)
 
+ 
+  add_executable(vad_sd ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_online.cc)
+  target_link_libraries(vad_sd ai_engine alsa-core -pthread asound)
+
   # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
   # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread tts_core -lespeak-ng -lasound onnxruntime)
 
@@ -229,6 +236,7 @@ else()
   install(
     TARGETS
     vad_stt
+    vad_sd
     # id_demo
     # diary_demo
     # diary_demo_simple

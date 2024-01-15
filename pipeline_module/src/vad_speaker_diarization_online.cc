@@ -85,8 +85,8 @@ int main()
       }
     }
 
-    vad_chunk_stt.STT(stt_interface);
-    // vad_chunk_stt.SpeakerDiarization(stt_interface, speaker_id, cluster);
+    // vad_chunk_stt.STT(stt_interface);
+    vad_chunk_stt.SpeakerDiarization(stt_interface, speaker_id, cluster);
   }
 
   ///////////////////////////////////////////
