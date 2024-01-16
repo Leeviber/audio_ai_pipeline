@@ -98,9 +98,6 @@ class VADChunk
 public:
     VADChunk(const std::string &model_path, const int window_size, const float vad_threshold, const float min_silence_duration);
 
-
-
-
     void PushAudioChunk(const std::vector<float> &audio_chunk);
 
     void STT(STTEngine *stt_interface);
@@ -111,15 +108,13 @@ public:
 
 private:
     int sampleRate = 16000;
-    float min_segment_length= 1.5;
+    float min_segment_length = 1.5;
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
     std::vector<std::vector<double>> embeddings_;
     std::vector<std::string> texts_;
     std::map<int, std::vector<std::string>> textIdMap;
     std::vector<Diarization> diarization_annote;
     std::vector<DiarizationSequence> diarization_sequence;
-
-
 };
 
 #endif // STT_ENGINE_H

@@ -32,7 +32,7 @@ int main()
   //// Init Sherpa STT module //////////
   bool using_whisper = false;
   STTEngine stt_interface(using_whisper);
-   //////////////////////////////////////
+  //////////////////////////////////////
 
   /////////// Init chunk VAD //////////////////
 
@@ -41,9 +41,10 @@ int main()
   float min_silence_duration = 0.01;
   float vad_threshold = 0.65;
 
-  VADChunk vad_chunk_stt(vad_path, vad_frame_ms,vad_threshold, min_silence_duration);
- 
-  printf("start\n");
+  VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, min_silence_duration);
+  //////////////////////////////////////
+
+  /////////// Init speaker id and cluster //////////////////
 
   std::vector<std::string> model_paths;
 #ifdef USE_NPU
@@ -62,10 +63,9 @@ int main()
 
   // Init speaker id
   SpeakerID speaker_id(model_paths, embedding_size);
-  
-  //Init cluster
-  Cluster cluster;
 
+  // Init cluster
+  Cluster cluster;
 
   printf("Init success\n");
   //// Main loop for audio real time process //////
@@ -84,10 +84,11 @@ int main()
       }
     }
 
-    bool isUpdate=vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
-    if(isUpdate)
+    bool isUpdate = vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
+
+    if (isUpdate)
     {
-      vad_chunk_stt.printAllDiarizations(true);  // true mean the result will print in sequence
+      vad_chunk_stt.printAllDiarizations(true); // true mean the result will print in sequence
                                                 // false will print in group
     }
   }
