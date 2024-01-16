@@ -78,11 +78,13 @@ std::string STTEngine::perform_stt(const std::vector<float>* audioData)
   return text;
 }
 
-VADChunk::VADChunk(const std::string &model_path, const int window_size)
+VADChunk::VADChunk(const std::string &model_path, const int window_size, const float vad_threshold,const float min_silence_duration)
 {
   sherpa_onnx::VadModelConfig vad_config;
   sherpa_onnx::SileroVadModelConfig silero_vad;
   silero_vad.model = model_path;
+  silero_vad.min_silence_duration=min_silence_duration;
+  silero_vad.threshold=vad_threshold;
   silero_vad.window_size = (window_size / 1000.0f) * vad_config.sample_rate;
   vad_config.silero_vad = silero_vad;
   vad_ = std::make_unique<sherpa_onnx::VoiceActivityDetector>(vad_config);
@@ -107,22 +109,34 @@ void VADChunk::STT(STTEngine *stt_interface)
   }
 }
 
-void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
+bool VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
 {
-  while (!vad_->Empty())
+  bool update_diarization=false;
+
+  if (!vad_->Empty())
   {
     printf("\n-------------------speaker diaization ------------------\n");
-    bool enable_cluster = false;
-
+ 
     auto &segment = vad_->Front();
+    int segment_length=segment.samples.size();
+
+    if(segment_length<min_segment_length*sampleRate)
+    {
+      vad_->Pop();
+      return update_diarization;
+    }
+    else
+    {
+      update_diarization=true;
+    }
     float start = (float)segment.start / sampleRate;
-    float end = (float)(segment.start + segment.samples.size()) / sampleRate;
+    float end = (float)(segment.start + segment_length) / sampleRate;
 
     std::string text = stt_interface->perform_stt(&segment.samples);
     texts_.push_back(text);
-    std::vector<int16_t> enroll_data_int16(segment.samples.size());
+    std::vector<int16_t> enroll_data_int16(segment_length);
 
-    for (int i = 0; i < segment.samples.size(); i++)
+    for (int i = 0; i < segment_length; i++)
     {
       enroll_data_int16[i] = static_cast<int16_t>(segment.samples[i] * 32767.0f);
     }
@@ -131,41 +145,50 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
 
     speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);
 
-    bool is_match = false;
-
+ 
     int match_idx = speaker_id_engine->FindMaxSimilarityKey(chunk_emb);
 
     if (match_idx != -1)
     {
+      printf("matched\n");
 
-      is_match = true;
       speaker_id_engine->UpdateAverageEmbedding(match_idx, chunk_emb);
+      int text_size=diarization_annote[match_idx].texts.size();
+
+      diarization_sequence.push_back(DiarizationSequence(match_idx,text_size));
+
       diarization_annote[match_idx].addDiarization(start, end, text);
+      vad_->Pop();
+
+      return update_diarization;
+
     }
     else
     {
+      printf("unmatched\n");
 
       speaker_id_engine->AddNewKeyValue(chunk_emb);
 
       std::vector<std::vector<double>> idArray;
       speaker_id_engine->MapToDoubleArray(idArray);
       int min_clu_size = idArray.size();
-
       std::vector<int> clustersRes; // 存储聚类结果
       cst->custom_clustering(idArray, clustersRes);
       std::vector<int> id_list;
-
+      
+   
       id_list = cst->mergeAndRenumber(clustersRes);
-
+   
       if (id_list.size() < 1)
       {
         diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
+        diarization_sequence.push_back(DiarizationSequence(0,0));
 
         vad_->Pop();
-        printAllDiarizations();
+        return update_diarization;
 
-        break;
       }
+      diarization_sequence.push_back(DiarizationSequence(diarization_annote.size(),0));
 
       diarization_annote.push_back(Diarization(id_list[-1], {start}, {end}, {text}));
 
@@ -177,23 +200,45 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
         }
       }
     }
-    printAllDiarizations();
 
     vad_->Pop();
   }
+
+  return update_diarization;
+
 }
 
-void VADChunk::printAllDiarizations()
+void VADChunk::printAllDiarizations(bool sequence)
 {
+ 
 
-  for (const auto &diarization : diarization_annote)
+
+  if(sequence)
   {
-    for (size_t i = 0; i < diarization.start.size(); ++i)
+    for (const auto &diarization_seq : diarization_sequence)
     {
-      printf("Speaker %d: [%.2f - %.2f] - \"%s\"\n", diarization.id, diarization.start[i], diarization.end[i], diarization.texts[i].c_str());
+      Diarization diarization=diarization_annote[diarization_seq.x];
+      int idx=diarization_seq.y;
+      printf("Speaker: %d, Time:[%.2f - %.2f]s , Text: \"%s\"\n", diarization.id, diarization.start[idx], diarization.end[idx], diarization.texts[idx].c_str());
+
     }
+
   }
-}
+  else
+  {
+    for (const auto &diarization : diarization_annote)
+    {
+      for (size_t i = 0; i < diarization.start.size(); ++i)
+      {
+        printf("Speaker: %d, Time:[%.2f - %.2f]s , Text: \"%s\"\n", diarization.id, diarization.start[i], diarization.end[i], diarization.texts[i].c_str());
+  
+      }
+    }
+
+  }
+
+
+ }
 
 SpeakerID::SpeakerID(const std::vector<std::string> &models_path,
                      const int embedding_size)

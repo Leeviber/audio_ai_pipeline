@@ -17,6 +17,29 @@
 #include "speaker_id/speaker/onnx_speaker_model.h"
 
 #include "speaker_diarization/speaker_diarization.h"
+struct Diarization
+{
+    int id;
+    std::vector<float> start;
+    std::vector<float> end;
+    std::vector<std::string> texts;
+
+    Diarization(int newId, const std::vector<float> &newStart, const std::vector<float> &newEnd, const std::vector<std::string> &newTexts) : id(newId), start(newStart), end(newEnd), texts(newTexts) {}
+
+    void addDiarization(const float newStart, const float newEnd, const std::string &newText)
+    {
+        start.push_back(newStart);
+        end.push_back(newEnd);
+        texts.push_back(newText);
+    }
+};
+
+struct DiarizationSequence
+{
+    int x;
+    int y;
+    DiarizationSequence(int newX, int newY) : x(newX), y(newY) {}
+};
 
 class STTEngine
 {
@@ -73,41 +96,30 @@ private:
 class VADChunk
 {
 public:
-    VADChunk(const std::string &model_path, const int window_size);
+    VADChunk(const std::string &model_path, const int window_size, const float vad_threshold, const float min_silence_duration);
 
-    struct Diarization
-    {
-        int id;
-        std::vector<float> start;
-        std::vector<float> end;
-        std::vector<std::string> texts;
 
-        Diarization(int newId, const std::vector<float> &newStart, const std::vector<float> &newEnd, const std::vector<std::string> &newTexts) : id(newId), start(newStart), end(newEnd), texts(newTexts) {}
 
-        void addDiarization(const float newStart, const float newEnd, const std::string &newText)
-        {
-            start.push_back(newStart);
-            end.push_back(newEnd);
-            texts.push_back(newText);
-        }
-    };
-
-    std::vector<Diarization> diarization_annote;
 
     void PushAudioChunk(const std::vector<float> &audio_chunk);
 
     void STT(STTEngine *stt_interface);
 
-    void SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst);
+    bool SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst);
 
-    void printAllDiarizations();
+    void printAllDiarizations(bool sequence);
 
 private:
     int sampleRate = 16000;
+    float min_segment_length= 1.5;
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
     std::vector<std::vector<double>> embeddings_;
     std::vector<std::string> texts_;
     std::map<int, std::vector<std::string>> textIdMap;
+    std::vector<Diarization> diarization_annote;
+    std::vector<DiarizationSequence> diarization_sequence;
+
+
 };
 
 #endif // STT_ENGINE_H

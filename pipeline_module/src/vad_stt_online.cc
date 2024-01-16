@@ -38,8 +38,9 @@ int main()
 
   int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
-
-  VADChunk vad_chunk_stt(vad_path, vad_frame_ms);
+  float min_silence_duration = 0.01;
+  float vad_threshold = 0.65;
+  VADChunk vad_chunk_stt(vad_path, vad_frame_ms,vad_threshold, min_silence_duration);
  
   //// Main loop for audio real time process //////
   //////////////////////////////////////
