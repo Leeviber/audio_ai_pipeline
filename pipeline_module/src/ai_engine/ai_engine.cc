@@ -1,55 +1,53 @@
 #include "ai_engine.h"
 
-STTEngine::STTEngine(bool using_whisper)
+STTEngine::STTEngine(bool using_whisper,bool using_chinese)
 {
   std::string tokens;
   sherpa_onnx::OfflineModelConfig model_config;
 
-  if (using_whisper)
+  if(using_chinese)
   {
-    // tokens = "./bin/distil-small.en-tokens.txt";
-    // std::string encoder_filename = "./bin/distil-small.en-encoder.int8.onnx";
-    // std::string decoder_filename = "./bin/distil-small.en-decoder.int8.onnx";
-
-    tokens = "./bin/distil-medium.en-tokens.txt";
-    std::string encoder_filename = "./bin/distil-medium.en-encoder.int8.onnx";
-    std::string decoder_filename = "./bin/distil-medium.en-decoder.int8.onnx";
-
-    sherpa_onnx::OfflineWhisperModelConfig whisper;
-    whisper.encoder = encoder_filename;
-    whisper.decoder = decoder_filename;
-    whisper.language = "en";
-    whisper.tail_paddings = 800;
-
-    model_config.model_type = "whisper";
-    model_config.whisper = whisper;
-  }
-  else
-  {
-    // tokens = "./bin/encoder-epoch-30-avg-4-tokens.txt";
-    // std::string encoder_filename = "./bin/encoder-epoch-30-avg-4.int8.onnx";
-    // std::string decoder_filename = "./bin/decoder-epoch-30-avg-4.int8.onnx";
-    // std::string joiner_filename = "./bin/joiner-epoch-30-avg-4.int8.onnx";
-
-    // sherpa_onnx::OfflineTransducerModelConfig transducer;
-    // transducer.encoder_filename = encoder_filename;
-    // transducer.decoder_filename = decoder_filename;
-    // transducer.joiner_filename = joiner_filename;
-
-    // model_config.model_type = "transducer";
-    // model_config.transducer = transducer;
-
     tokens = "./model/sherpa-onnx-paraformer-zh-2023-09-14/tokens.txt";
     std::string model = "./model/sherpa-onnx-paraformer-zh-2023-09-14/model.int8.onnx";
     sherpa_onnx::OfflineParaformerModelConfig paraformer;
     paraformer.model = model;
-
-    // sherpa_onnx::OfflineTransducerModelConfig transducer;
-    // transducer.encoder_filename=encoder_filename;
-    // transducer.decoder_filename=decoder_filename;
-    // transducer.joiner_filename=joiner_filename;
     model_config.model_type = "paraformer";
     model_config.paraformer = paraformer;
+  }
+  else
+  {
+
+    if (using_whisper)
+    {
+ 
+      tokens = "./bin/distil-medium.en-tokens.txt";
+      std::string encoder_filename = "./bin/distil-medium.en-encoder.int8.onnx";
+      std::string decoder_filename = "./bin/distil-medium.en-decoder.int8.onnx";
+
+      sherpa_onnx::OfflineWhisperModelConfig whisper;
+      whisper.encoder = encoder_filename;
+      whisper.decoder = decoder_filename;
+      whisper.language = "en";
+      whisper.tail_paddings = 800;
+
+      model_config.model_type = "whisper";
+      model_config.whisper = whisper;
+    }
+    else
+    {
+      tokens = "./bin/encoder-epoch-30-avg-4-tokens.txt";
+      std::string encoder_filename = "./bin/encoder-epoch-30-avg-4.int8.onnx";
+      std::string decoder_filename = "./bin/decoder-epoch-30-avg-4.int8.onnx";
+      std::string joiner_filename = "./bin/joiner-epoch-30-avg-4.int8.onnx";
+
+      sherpa_onnx::OfflineTransducerModelConfig transducer;
+      transducer.encoder_filename = encoder_filename;
+      transducer.decoder_filename = decoder_filename;
+      transducer.joiner_filename = joiner_filename;
+
+      model_config.model_type = "transducer";
+      model_config.transducer = transducer;
+    }
   }
 
   model_config.tokens = tokens;

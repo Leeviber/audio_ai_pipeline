@@ -44,7 +44,7 @@ struct DiarizationSequence
 class STTEngine
 {
 public:
-    STTEngine(bool using_whisper);
+    STTEngine(bool using_whisper,bool using_chinese);
 
     std::string perform_stt(const std::vector<float> *audioData);
 

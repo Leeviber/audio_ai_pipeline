@@ -30,8 +30,9 @@ int main()
   //////////////////////////////////////
 
   //// Init Sherpa STT module //////////
-  bool using_whisper = false;
-  STTEngine stt_interface(using_whisper);
+  bool using_Whisper = false;  // English only
+  bool using_Chinese = true;   // Not support whipser
+  STTEngine stt_interface(using_Whisper,using_Chinese);
   //////////////////////////////////////
 
   /////////// Init chunk VAD //////////////////
