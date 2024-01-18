@@ -135,12 +135,6 @@ private:
     
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
     
-    std::vector<std::vector<double>> embeddings_;
-    
-    std::vector<std::string> texts_;
-    
-    std::map<int, std::vector<std::string>> textIdMap;
-    
     std::vector<Diarization> diarization_annote;
     
     std::vector<DiarizationSequence> diarization_sequence;

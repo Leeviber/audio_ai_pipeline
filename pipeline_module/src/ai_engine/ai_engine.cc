@@ -140,7 +140,6 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
     float end = (float)(segment.start + segment_length) / sampleRate;
 
     std::string text = stt_interface->perform_stt(&segment.samples);
-    texts_.push_back(text);
     std::vector<int16_t> enroll_data_int16(segment_length);
 
     for (int i = 0; i < segment_length; i++)
