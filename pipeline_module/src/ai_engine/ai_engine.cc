@@ -164,9 +164,7 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
       diarization_sequence.push_back(DiarizationSequence(match_idx, text_size));
 
       diarization_annote[match_idx].addDiarization(start, end, text);
-      // vad_->Pop();
 
-      // return update_diarization;
     }
     else
     {
@@ -188,8 +186,6 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
         diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
         diarization_sequence.push_back(DiarizationSequence(0, 0));
 
-        // vad_->Pop();
-        // return update_diarization;
       }
       else
       {

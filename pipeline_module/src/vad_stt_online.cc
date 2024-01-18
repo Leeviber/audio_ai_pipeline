@@ -1,16 +1,5 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <thread>
-#include <mutex>
-#include <algorithm>
-#include <numeric>
-#include <cmath>
-#include <math.h>
-
 #include "alsa_cq_buffer.h"      // ALSA
-#include "ai_engine/ai_engine.h" //STT
+#include "ai_engine/ai_engine.h" //AI audio engine
 
 int main()
 {
@@ -56,7 +45,7 @@ int main()
     while (true)
     {
       int len = audio_CQ_get(&params, vad_frame_ms, 0); // The audio windows for ai vad is 64ms
-      if (len > 0)
+      if (len >= vad_frame_ms/1000*params.sample_rate)
       {
         vad_chunk_stt.PushAudioChunk(params.audio.pcmf32_new);
         break;

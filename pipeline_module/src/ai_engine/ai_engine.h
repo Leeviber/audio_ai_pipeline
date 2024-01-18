@@ -7,6 +7,8 @@
 #include <math.h>
 #include <map>
 
+#include "wav/wavfile.hpp"
+
 #include "sherpa_stt/offline-recognizer.h"
 #include "sherpa_stt/offline-model-config.h"
 #include "sherpa_stt/voice-activity-detector.h"
@@ -50,6 +52,7 @@ public:
 
 private:
     std::unique_ptr<sherpa_onnx::OfflineRecognizer> recognizer;
+   
     int sampleRate = 16000;
 };
 
@@ -67,6 +70,7 @@ public:
     // extract embedding
     void ExtractEmbedding(const int16_t *data, int data_size,
                           std::vector<float> *avg_emb);
+
     void ApplyMean(std::vector<std::vector<float>> *feats,
                    unsigned int feat_dim);
 
@@ -83,13 +87,19 @@ public:
 
 private:
     std::shared_ptr<wespeaker::SpeakerModel> rknn_model_ = nullptr;
+
     std::shared_ptr<wespeaker::SpeakerModel> onnx_model_ = nullptr;
+    
     std::shared_ptr<wenet::FeaturePipelineConfig> feature_config_ = nullptr;
+    
     std::shared_ptr<wenet::FeaturePipeline> feature_pipeline_ = nullptr;
+    
     std::map<int, std::vector<float>> averageEmbeddings;
 
     int embedding_size_ = 0;
+    
     int per_chunk_samples_ = 32000;
+    
     int sample_rate_ = 16000;
 };
 
@@ -120,15 +130,25 @@ public:
 
 private:
     int sampleRate = 16000;
+    
     float min_segment_length = 1.5;
+    
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
+    
     std::vector<std::vector<double>> embeddings_;
+    
     std::vector<std::string> texts_;
+    
     std::map<int, std::vector<std::string>> textIdMap;
+    
     std::vector<Diarization> diarization_annote;
+    
     std::vector<DiarizationSequence> diarization_sequence;
+    
     bool dumpOutput;
+    
     std::string fileName;
+
 };
 
 #endif // STT_ENGINE_H

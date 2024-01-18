@@ -1,16 +1,5 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <thread>
-#include <mutex>
-#include <algorithm>
-#include <numeric>
-#include <cmath>
-#include <math.h>
-
 #include "alsa_cq_buffer.h"      // ALSA
-#include "ai_engine/ai_engine.h" //STT & Speaker diarization
+#include "ai_engine/ai_engine.h" // AI audio engine
 
 int main()
 {
@@ -44,7 +33,8 @@ int main()
   bool saveAnanotation = true;
   std::string filename = "diarization_output.txt";
 
-  VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, min_silence_duration, saveAnanotation, filename);
+  VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, 
+  min_silence_duration, saveAnanotation, filename);
   //////////////////////////////////////
 
   /////////// Init speaker id and cluster //////////////////
@@ -61,7 +51,7 @@ int main()
   // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
   model_paths.push_back(onnx_model_path);
 
-#endif /
+#endif 
   int embedding_size = 256;
 
   // Init speaker id
@@ -80,9 +70,10 @@ int main()
     while (true)
     {
       int len = audio_CQ_get(&params, vad_frame_ms, 0); // The audio windows for ai vad is 64ms
-      if (len > 0)
+     
+      if (len >= vad_frame_ms/1000*params.sample_rate)
       {
-        vad_chunk_stt.PushAudioChunk(params.audio.pcmf32_new);
+        vad_chunk_stt.PushAudioChunk(params.audio.pcmf32_new);  
         break;
       }
     }
