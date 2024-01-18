@@ -85,13 +85,13 @@ target_link_libraries(ai_engine sherpa-onnx-core speaker speake_diarization)
 
 
 set(CMAKE_CXX_STANDARD 17) # tts require c++ 17
-set(stt
+set(tts
   ${CMAKE_CURRENT_SOURCE_DIR}/tts/piper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tts/phoneme_ids.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tts/phonemize.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tts/tts.cc
 )
-add_library(tts_core ${stt})
+add_library(tts_core ${tts})
 
 target_link_libraries(tts_core onnxruntime)
 
@@ -141,7 +141,10 @@ target_link_libraries(tts_core
 
 
 if(TARGET_SOC STREQUAL "rk3588")
-  
+  if(SPEAK_ID_NPU)
+    add_definitions(-DUSE_NPU)
+  endif()
+
   target_link_libraries(speaker PUBLIC ${RKNN_RT_LIB})
 
 
@@ -169,9 +172,6 @@ if(TARGET_SOC STREQUAL "rk3588")
   # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
   # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
 
-  if(SPEAK_ID_NPU)
-    add_definitions(-DUSE_NPU)
-  endif()
 
   # add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
   # target_link_libraries(track_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
@@ -182,11 +182,13 @@ if(TARGET_SOC STREQUAL "rk3588")
 
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
- 
+  install(TARGETS ai_engine DESTINATION lib)
+
   install(
     TARGETS
     # kws_stt
     vad_stt
+    vad_sd
     # vad_stt_tts
     # id_demo
     # diary_demo
@@ -232,6 +234,7 @@ else()
 
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
+  install(TARGETS ai_engine DESTINATION lib)
 
   install(
     TARGETS

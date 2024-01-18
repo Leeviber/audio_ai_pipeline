@@ -1,14 +1,14 @@
 #include "ai_engine.h"
 
-STTEngine::STTEngine(bool using_whisper,bool using_chinese)
+STTEngine::STTEngine(bool using_whisper, bool using_chinese)
 {
   std::string tokens;
   sherpa_onnx::OfflineModelConfig model_config;
 
-  if(using_chinese)
+  if (using_chinese)
   {
-    tokens = "./model/sherpa-onnx-paraformer-zh-2023-09-14/tokens.txt";
-    std::string model = "./model/sherpa-onnx-paraformer-zh-2023-09-14/model.int8.onnx";
+    tokens = "./bin/sherpa-onnx-paraformer-zh-2023-09-14/tokens.txt";
+    std::string model = "./bin/sherpa-onnx-paraformer-zh-2023-09-14/model.int8.onnx";
     sherpa_onnx::OfflineParaformerModelConfig paraformer;
     paraformer.model = model;
     model_config.model_type = "paraformer";
@@ -19,7 +19,7 @@ STTEngine::STTEngine(bool using_whisper,bool using_chinese)
 
     if (using_whisper)
     {
- 
+
       tokens = "./bin/distil-medium.en-tokens.txt";
       std::string encoder_filename = "./bin/distil-medium.en-encoder.int8.onnx";
       std::string decoder_filename = "./bin/distil-medium.en-decoder.int8.onnx";
@@ -76,7 +76,13 @@ std::string STTEngine::perform_stt(const std::vector<float> *audioData)
   return text;
 }
 
-VADChunk::VADChunk(const std::string &model_path, const int window_size, const float vad_threshold, const float min_silence_duration)
+VADChunk::VADChunk(
+    const std::string &model_path,
+    const int window_size,
+    const float vad_threshold,
+    const float min_silence_duration,
+    bool dumpOutput,
+    std::string textFileName)
 {
   sherpa_onnx::VadModelConfig vad_config;
   sherpa_onnx::SileroVadModelConfig silero_vad;
@@ -86,6 +92,8 @@ VADChunk::VADChunk(const std::string &model_path, const int window_size, const f
   silero_vad.window_size = (window_size / 1000.0f) * vad_config.sample_rate;
   vad_config.silero_vad = silero_vad;
   vad_ = std::make_unique<sherpa_onnx::VoiceActivityDetector>(vad_config);
+  dumpOutput = dumpOutput;
+  fileName = textFileName;
 }
 
 void VADChunk::PushAudioChunk(const std::vector<float> &audio_chunk)
@@ -97,23 +105,27 @@ void VADChunk::STT(STTEngine *stt_interface)
 {
   while (!vad_->Empty())
   {
+
     auto &segment = vad_->Front();
     std::string text = stt_interface->perform_stt(&segment.samples);
     float start = (float)segment.start / sampleRate;
     float end = (float)(segment.start + segment.samples.size()) / sampleRate;
+    if (dumpOutput)
+    {
+      saveSTTAnnotation(fileName, start, end, text, true);
+    }
 
-    printf("Time:%.2fs~%.2fs, Text: %s\n----\n", start, end, text.c_str());
+    printSTTAnnotation(start, end, text);
+
     vad_->Pop();
   }
 }
 
-bool VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
+void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
 {
-  bool update_diarization = false;
 
   if (!vad_->Empty())
   {
-    printf("\n-------------------speaker diaization ------------------\n");
 
     auto &segment = vad_->Front();
     int segment_length = segment.samples.size();
@@ -121,12 +133,9 @@ bool VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
     if (segment_length < min_segment_length * sampleRate)
     {
       vad_->Pop();
-      return update_diarization;
+      return;
     }
-    else
-    {
-      update_diarization = true;
-    }
+
     float start = (float)segment.start / sampleRate;
     float end = (float)(segment.start + segment_length) / sampleRate;
 
@@ -155,9 +164,9 @@ bool VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
       diarization_sequence.push_back(DiarizationSequence(match_idx, text_size));
 
       diarization_annote[match_idx].addDiarization(start, end, text);
-      vad_->Pop();
+      // vad_->Pop();
 
-      return update_diarization;
+      // return update_diarization;
     }
     else
     {
@@ -179,30 +188,39 @@ bool VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
         diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
         diarization_sequence.push_back(DiarizationSequence(0, 0));
 
-        vad_->Pop();
-        return update_diarization;
+        // vad_->Pop();
+        // return update_diarization;
       }
-      diarization_sequence.push_back(DiarizationSequence(diarization_annote.size(), 0));
-
-      diarization_annote.push_back(Diarization(id_list[-1], {start}, {end}, {text}));
-
-      for (int i = 0; i < diarization_annote.size(); i++)
+      else
       {
-        if (diarization_annote[i].id != id_list[i])
+        diarization_sequence.push_back(DiarizationSequence(diarization_annote.size(), 0));
+        diarization_annote.push_back(Diarization(id_list[-1], {start}, {end}, {text}));
+
+        for (int i = 0; i < diarization_annote.size(); i++)
         {
-          diarization_annote[i].id = id_list[i];
+          if (diarization_annote[i].id != id_list[i])
+          {
+            diarization_annote[i].id = id_list[i];
+          }
         }
       }
     }
 
+    printAllDiarizations(true); // true mean the result will print in sequence
+                                // false will print in group
+    if (dumpOutput)
+    {
+      saveDiarizationsAnnotation(fileName, true, false);
+    }
     vad_->Pop();
   }
 
-  return update_diarization;
+  return;
 }
 
 void VADChunk::printAllDiarizations(bool sequence)
 {
+  printf("\n-------------------speaker diaization ------------------\n");
 
   if (sequence)
   {
@@ -223,6 +241,66 @@ void VADChunk::printAllDiarizations(bool sequence)
       }
     }
   }
+}
+
+void VADChunk::saveSTTAnnotation(std::string fileName, double start, double end, const std::string &text, bool appendToFile)
+{
+  // 打开文本文件，根据参数决定是覆盖还是追加
+  std::ofstream outputFile(fileName, appendToFile ? std::ios_base::app : std::ios_base::out);
+  printf("file name%s\n", fileName.c_str());
+  if (!outputFile.is_open())
+  {
+    std::cerr << "Error opening file for writing." << std::endl;
+    return;
+  }
+
+  // 将信息写入文件
+  outputFile << "Time: [" << start << "s ~ " << end << "s], Text: " << text << "\"\n";
+
+  // 关闭文件
+  outputFile.close();
+}
+void VADChunk::printSTTAnnotation(double start, double end, const std::string &text)
+{
+  printf("Time: [%.2fs~%.2fs], Text: %s\n", start, end, text.c_str());
+}
+
+void VADChunk::saveDiarizationsAnnotation(std::string fileName, bool sequence, bool appendToFile = false)
+
+{
+  // 打开文本文件，根据参数决定是覆盖还是追加
+  std::ofstream outputFile(fileName, appendToFile ? std::ios_base::app : std::ios_base::out);
+
+  if (!outputFile.is_open())
+  {
+    std::cerr << "Error opening file for writing." << std::endl;
+    return;
+  }
+
+  if (sequence)
+  {
+    for (const auto &diarization_seq : diarization_sequence)
+    {
+      Diarization diarization = diarization_annote[diarization_seq.x];
+      int idx = diarization_seq.y;
+      // 将信息写入文件
+      outputFile << "Speaker: " << diarization.id << ", Time: [" << diarization.start[idx] << " - " << diarization.end[idx] << "]s, Text: \"" << diarization.texts[idx] << "\"\n";
+    }
+  }
+  else
+  {
+    for (const auto &diarization : diarization_annote)
+    {
+      for (size_t i = 0; i < diarization.start.size(); ++i)
+      {
+        // 将信息写入文件
+        outputFile << "Speaker: " << diarization.id << ", Time: [" << diarization.start[i] << " - " << diarization.end[i] << "]s, Text: \"" << diarization.texts[i] << "\"\n";
+      }
+    }
+  }
+
+  // 关闭文件
+  outputFile.close();
 }
 
 SpeakerID::SpeakerID(const std::vector<std::string> &models_path,

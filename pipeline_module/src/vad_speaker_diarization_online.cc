@@ -30,19 +30,21 @@ int main()
   //////////////////////////////////////
 
   //// Init Sherpa STT module //////////
-  bool using_Whisper = false;  // English only
-  bool using_Chinese = true;   // Not support whipser
-  STTEngine stt_interface(using_Whisper,using_Chinese);
+  bool using_Whisper = true;  // English only
+  bool using_Chinese = false; // Not support whipser
+  STTEngine stt_interface(using_Whisper, using_Chinese);
   //////////////////////////////////////
 
   /////////// Init chunk VAD //////////////////
 
-  int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
+  int vad_frame_ms = 32; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
   float min_silence_duration = 0.01;
   float vad_threshold = 0.65;
+  bool saveAnanotation = true;
+  std::string filename = "diarization_output.txt";
 
-  VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, min_silence_duration);
+  VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, min_silence_duration, saveAnanotation, filename);
   //////////////////////////////////////
 
   /////////// Init speaker id and cluster //////////////////
@@ -85,13 +87,7 @@ int main()
       }
     }
 
-    bool isUpdate = vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
-
-    if (isUpdate)
-    {
-      vad_chunk_stt.printAllDiarizations(true); // true mean the result will print in sequence
-                                                // false will print in group
-    }
+    vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
   }
 
   ///////////////////////////////////////////

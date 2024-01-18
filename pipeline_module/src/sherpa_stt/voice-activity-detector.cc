@@ -45,6 +45,7 @@ namespace sherpa_onnx
 
       if (is_speech)
       {
+ 
         if (start_ == -1)
         {
           // beginning of speech

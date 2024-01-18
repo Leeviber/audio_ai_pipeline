@@ -44,7 +44,7 @@ struct DiarizationSequence
 class STTEngine
 {
 public:
-    STTEngine(bool using_whisper,bool using_chinese);
+    STTEngine(bool using_whisper, bool using_chinese);
 
     std::string perform_stt(const std::vector<float> *audioData);
 
@@ -96,15 +96,27 @@ private:
 class VADChunk
 {
 public:
-    VADChunk(const std::string &model_path, const int window_size, const float vad_threshold, const float min_silence_duration);
+    VADChunk(
+        const std::string &model_path,
+        const int window_size,
+        const float vad_threshold,
+        const float min_silence_duration,
+        bool dumpOutput,
+        const std::string textFileName);
 
     void PushAudioChunk(const std::vector<float> &audio_chunk);
 
     void STT(STTEngine *stt_interface);
 
-    bool SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst);
+    void SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst);
+
+    void printSTTAnnotation(double start, double end, const std::string &text);
 
     void printAllDiarizations(bool sequence);
+
+    void saveSTTAnnotation(std::string fileName, double start, double end, const std::string &text, bool appendToFile = false);
+
+    void saveDiarizationsAnnotation(std::string fileName, bool sequence, bool appendToFile);
 
 private:
     int sampleRate = 16000;
@@ -115,6 +127,8 @@ private:
     std::map<int, std::vector<std::string>> textIdMap;
     std::vector<Diarization> diarization_annote;
     std::vector<DiarizationSequence> diarization_sequence;
+    bool dumpOutput;
+    std::string fileName;
 };
 
 #endif // STT_ENGINE_H

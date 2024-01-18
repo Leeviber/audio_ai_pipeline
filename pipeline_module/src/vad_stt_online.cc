@@ -30,22 +30,23 @@ int main()
   //////////////////////////////////////
 
   //// Init Sherpa STT module //////////
-  bool using_Whisper = false;  // English only
-  bool using_Chinese = true;   // Not support whipser
-  STTEngine stt_interface(using_Whisper,using_Chinese);
+  bool using_Whisper = false; // English only
+  bool using_Chinese = false; // Not support whipser
+  STTEngine stt_interface(using_Whisper, using_Chinese);
   //////////////////////////////////////
 
   /////////// Init chunk VAD //////////////////
 
-  int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
+  int vad_frame_ms = 32; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
   float min_silence_duration = 0.01;
   float vad_threshold = 0.65;
-  VADChunk vad_chunk_stt(vad_path, vad_frame_ms,vad_threshold, min_silence_duration);
- 
+  bool saveAnanotation = true;
+  std::string filename = "STT_output.txt";
+  VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, min_silence_duration, saveAnanotation, filename);
+
   //// Main loop for audio real time process //////
   //////////////////////////////////////
-
 
   printf("Init success\n");
 
