@@ -52,7 +52,7 @@ public:
 
 private:
     std::unique_ptr<sherpa_onnx::OfflineRecognizer> recognizer;
-   
+
     int sampleRate = 16000;
 };
 
@@ -89,17 +89,17 @@ private:
     std::shared_ptr<wespeaker::SpeakerModel> rknn_model_ = nullptr;
 
     std::shared_ptr<wespeaker::SpeakerModel> onnx_model_ = nullptr;
-    
+
     std::shared_ptr<wenet::FeaturePipelineConfig> feature_config_ = nullptr;
-    
+
     std::shared_ptr<wenet::FeaturePipeline> feature_pipeline_ = nullptr;
-    
+
     std::map<int, std::vector<float>> averageEmbeddings;
 
     int embedding_size_ = 0;
-    
+
     int per_chunk_samples_ = 32000;
-    
+
     int sample_rate_ = 16000;
 };
 
@@ -130,19 +130,18 @@ public:
 
 private:
     int sampleRate = 16000;
-    
-    float min_segment_length = 1.5;
-    
-    std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
-    
-    std::vector<Diarization> diarization_annote;
-    
-    std::vector<DiarizationSequence> diarization_sequence;
-    
-    bool dumpOutput;
-    
-    std::string fileName;
 
+    float min_segment_length = 1.5;
+
+    std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
+
+    std::vector<Diarization> diarization_annote;
+
+    std::vector<DiarizationSequence> diarization_sequence;
+
+    bool dumpOutput;
+
+    std::string fileName;
 };
 
 #endif // STT_ENGINE_H

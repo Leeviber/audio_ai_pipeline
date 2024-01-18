@@ -147,7 +147,6 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
       enroll_data_int16[i] = static_cast<int16_t>(segment.samples[i] * 32767.0f);
     }
     std::vector<float> chunk_emb(speaker_id_engine->EmbeddingSize(), 0);
-    std::vector<double> chunk_emb_double(speaker_id_engine->EmbeddingSize(), 0);
 
     speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);
 
@@ -163,7 +162,6 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
       diarization_sequence.push_back(DiarizationSequence(match_idx, text_size));
 
       diarization_annote[match_idx].addDiarization(start, end, text);
-
     }
     else
     {
@@ -184,7 +182,6 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
       {
         diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
         diarization_sequence.push_back(DiarizationSequence(0, 0));
-
       }
       else
       {
