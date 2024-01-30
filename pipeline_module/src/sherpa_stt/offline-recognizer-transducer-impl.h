@@ -1,18 +1,17 @@
 // sherpa-onnx/csrc/offline-recognizer-transducer-impl.h
-//
 
 #ifndef SHERPA_ONNX_CSRC_OFFLINE_RECOGNIZER_TRANSDUCER_IMPL_H_
 #define SHERPA_ONNX_CSRC_OFFLINE_RECOGNIZER_TRANSDUCER_IMPL_H_
 
 #include <fstream>
+#include <ios>
 #include <memory>
+#include <regex>  // NOLINT
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <regex>  
-#include <iostream>
 
-#include "sentencepiece_processor.h"  // NOLINT
 
 #include "context-graph.h"
 #include "macros.h"
@@ -40,6 +39,14 @@ static OfflineRecognitionResult Convert(
     auto sym = sym_table[i];
     text.append(sym);
 
+    if (sym.size() == 1 && sym[0] != ' ') {
+      // for byte bpe models
+      std::ostringstream os;
+      os << "<0x" << std::hex << std::uppercase
+         << (static_cast<int32_t>(sym[0]) & 0xff) << ">";
+      sym = os.str();
+    }
+
     r.tokens.push_back(std::move(sym));
   }
   r.text = std::move(text);
@@ -60,26 +67,13 @@ class OfflineRecognizerTransducerImpl : public OfflineRecognizerImpl {
       : config_(config),
         symbol_table_(config_.model_config.tokens),
         model_(std::make_unique<OfflineTransducerModel>(config_.model_config)) {
-      if (!config_.model_config.bpe_model.empty()) {
-        auto status = bpe_processor_.Load(config_.model_config.bpe_model);
-        if (!status.ok()) {
-          SHERPA_ONNX_LOGE("Load bpe model error, status : %s.",
-                          status.ToString().c_str());
-          exit(-1);
-      }
-    }
     if (!config_.hotwords_file.empty()) {
-      printf("using hotword");
       InitHotwords();
     }
     if (config_.decoding_method == "greedy_search") {
-      printf("using greedy_search");
-
       decoder_ =
           std::make_unique<OfflineTransducerGreedySearchDecoder>(model_.get());
     } else if (config_.decoding_method == "modified_beam_search") {
-            printf("using modified_beam_search");
-
       if (!config_.lm_config.model.empty()) {
         lm_ = OfflineLM::Create(config.lm_config);
       }
@@ -93,7 +87,6 @@ class OfflineRecognizerTransducerImpl : public OfflineRecognizerImpl {
       exit(-1);
     }
   }
-
 
 
   std::unique_ptr<OfflineStream> CreateStream(
@@ -124,7 +117,7 @@ class OfflineRecognizerTransducerImpl : public OfflineRecognizerImpl {
     int32_t feat_dim = ss[0]->FeatureDim();
 
     std::vector<Ort::Value> features;
-  
+
     features.reserve(n);
 
     std::vector<std::vector<float>> features_vec(n);
@@ -180,76 +173,12 @@ class OfflineRecognizerTransducerImpl : public OfflineRecognizerImpl {
       exit(-1);
     }
 
-    InitHotwords(is);  //for text
-
-    // if (!EncodeHotwords(is, symbol_table_, &hotwords_)) {   //for token
-    //   SHERPA_ONNX_LOGE("Encode hotwords failed.");
-    //   exit(-1);
-    // }
-    hotwords_graph_ =
-        std::make_shared<ContextGraph>(hotwords_, config_.hotwords_score);
-  }
-
-  void EncodeWithBpe(const std::string word, std::vector<std::string> *syms) {
-    syms->clear();
-    std::vector<std::string> bpes;
-    if (bpe_processor_.status().ok()) {
-      if (bpe_processor_.Encode(word, &bpes).ok()) {
-        for (auto bpe : bpes) {
-          if (bpe.size() >= 3) {
-            // For BPE-based models, we replace ▁ with a space
-            // Unicode 9601, hex 0x2581, utf8 0xe29681
-            const uint8_t *p = reinterpret_cast<const uint8_t *>(bpe.c_str());
-            if (p[0] == 0xe2 && p[1] == 0x96 && p[2] == 0x81) {
-              bpe = bpe.replace(0, 3, " ");
-            }
-          }
-          syms->push_back(bpe);
-        }
-      } else {
-        SHERPA_ONNX_LOGE("SentencePiece encode error for hotword %s. ",
-                         word.c_str());
-        exit(-1);
-      }
-    } else {
-      SHERPA_ONNX_LOGE("SentencePiece processor error : %s.",
-                       bpe_processor_.status().ToString().c_str());
+    if (!EncodeHotwords(is, symbol_table_, &hotwords_)) {
+      SHERPA_ONNX_LOGE("Encode hotwords failed.");
       exit(-1);
     }
-  }
-
-  void InitHotwords(std::istream &is) {
-    std::vector<int32_t> tmp;
-    std::string line;
-    std::string word;
-
-    while (std::getline(is, line)) {
-      std::istringstream iss(line);
-      std::vector<std::string> syms;
-      while (iss >> word) {
-        if (config_.model_config.tokens_type == "cjkchar") {
-          syms.push_back(word);
-        } else if (config_.model_config.tokens_type == "bpe") {
-          std::vector<std::string> bpes;
-          EncodeWithBpe(word, &bpes);
-          syms.insert(syms.end(), bpes.begin(), bpes.end());
-        }  
-      }
-      for (auto sym : syms) {
-        if (symbol_table_.contains(sym)) {
-          int32_t number = symbol_table_[sym];
-          tmp.push_back(number);
-        } else {
-          SHERPA_ONNX_LOGE(
-              "Cannot find ID for hotword %s at line: %s. (Hint: words on "
-              "the "
-              "same line are separated by spaces)",
-              sym.c_str(), line.c_str());
-          exit(-1);
-        }
-      }
-      hotwords_.push_back(std::move(tmp));
-    }
+    hotwords_graph_ =
+        std::make_shared<ContextGraph>(hotwords_, config_.hotwords_score);
   }
 
  private:
@@ -257,9 +186,6 @@ class OfflineRecognizerTransducerImpl : public OfflineRecognizerImpl {
   SymbolTable symbol_table_;
   std::vector<std::vector<int32_t>> hotwords_;
   ContextGraphPtr hotwords_graph_;
-
-  sentencepiece::SentencePieceProcessor bpe_processor_;
-
   std::unique_ptr<OfflineTransducerModel> model_;
   std::unique_ptr<OfflineTransducerDecoder> decoder_;
   std::unique_ptr<OfflineLM> lm_;

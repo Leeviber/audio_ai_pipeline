@@ -61,7 +61,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 include(kaldi-native-fbank)
 include(onnxruntime)
-include(sentencepiece)
+# include(sentencepiece)
 
 
 add_subdirectory(src)

@@ -380,7 +380,6 @@ public:
                 audio[i*waveform[0].size() + j] = waveform[i][j];
             }
         }
-        std::cout<<"waveform.size()"<<waveform.size()<<std::endl;
 
         // batch_size * num_channels (1 for mono) * num_samples
         const int64_t batch_size = waveform.size();
@@ -403,7 +402,7 @@ public:
         int len1 = outputs_shape[0];
         int len2 = outputs_shape[1];
         int len3 = outputs_shape[2];
-        std::cout<<"output shape:"<<len1<<"x"<<len2<<"x"<<len3<<std::endl;
+        // std::cout<<"output shape:"<<len1<<"x"<<len2<<"x"<<len3<<std::endl;
 
         len1 = waveform.size();  // <====
         std::vector<std::vector<std::vector<float>>> res( len1, 
@@ -427,17 +426,17 @@ public:
         // 创建用于存储平均值的数组，初始化为0.0，共三个元素
         std::vector<double> averages(inputArray[0].size(), 0.0);
         // std::cout<<"inputArray.size(): ("<<inputArray.size()<<","<<inputArray[0].size()<<")"<<std::endl;
-        std::cout<<"inputArray: ";
+        // std::cout<<"inputArray: ";
         // 计算每列的和
         for (size_t i = 200; i < inputArray.size(); ++i) {
             for (size_t j = 0; j < inputArray[i].size(); ++j) {
-                std::cout<<","<< inputArray[i][j];
+                // std::cout<<","<< inputArray[i][j];
                 averages[j] += inputArray[i][j];
             }
-            std::cout<<""<<std::endl;
+            // std::cout<<""<<std::endl;
 
         }
-        std::cout<<""<<std::endl;
+        // std::cout<<""<<std::endl;
 
         // 计算每列的平均值
         for (size_t i = 0; i < averages.size(); ++i) {
@@ -560,7 +559,7 @@ public:
         std::vector<std::vector<float>> chunks;
         std::vector<std::vector<std::vector<float>>> outputs;
         static int temp_mex_idx= 0;
-        while( i + window_size < num_samples )
+        while( i + 1 < num_samples )
         {
  
                 // Starting and Ending iterators
@@ -581,19 +580,20 @@ public:
 
                 auto end_time = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-                std::cout << "infer1 函数的运行时间为: " << duration.count() << " 毫秒" << std::endl;
+                // std::cout << "infer1 函数的运行时间为: " << duration.count() << " 毫秒" << std::endl;
                 // std::cout<<"tmp size"<<tmp.size()<<"x"<<tmp[0].size()<<"x"<<tmp[0][0].size()<<std::endl;
-                // auto binarized = binarize_swf(tmp,false);
+                auto binarized = binarize_swf(tmp,false);
                 // std::cout<<"binarized size"<<binarized.size()<<"x"<<binarized[0].size()<<"x"<<binarized[0][0].size()<<std::endl;
-                // std::vector<double> result = calculateColumnAverages(binarized[0]);
+                std::vector<double> result = calculateColumnAverages(binarized[0]);
                 // std::cout<<"mean result "<<std::endl<<"speaker 1: "<<result[0]<<std::endl<<" speaker 2: "<<result[1]<<std::endl<<" speaker 3: "<<result[2]<<std::endl;
-                // int maxPosition = max_element(result.begin(),result.end()) - result.begin(); 
+                int maxPosition = max_element(result.begin(),result.end()) - result.begin(); 
                 // std::cout<<"maxPosition:"<<maxPosition<<" temp_mex_idx:"<<temp_mex_idx<<" result[maxPosition]:"<<result[maxPosition]<<std::endl;
-                // if(maxPosition!=temp_mex_idx && result[maxPosition]>0.2)
-                // {
-                //     temp_mex_idx=maxPosition;
-                //     std::cout<<"speaker changeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"<<std::endl;
-                // }
+                if(maxPosition!=temp_mex_idx && result[maxPosition]>0.2)
+                {
+                    printf("maxPosition %d\n",maxPosition);
+                    temp_mex_idx=maxPosition;
+                    std::cout<<"speaker changeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"<<std::endl;
+                }
 
                 // std::cout<<"maxPosition "<<maxPosition<<std::endl;
                 for( const auto& a : tmp )

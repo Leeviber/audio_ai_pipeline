@@ -54,7 +54,7 @@ file(GLOB sherpa_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/sherpa_stt/*.cc
 )
 add_library(sherpa-onnx-core ${sherpa_sources})
-target_link_libraries(sherpa-onnx-core onnxruntime kaldi-native-fbank-core sentencepiece-static) 
+target_link_libraries(sherpa-onnx-core onnxruntime kaldi-native-fbank-core ) 
  
 set(ai_engine_src
   ${CMAKE_CURRENT_SOURCE_DIR}/ai_engine/ai_engine.cc
@@ -74,12 +74,6 @@ add_library(speake_diarization ${speake_diarization_core})
 target_link_libraries(speake_diarization PUBLIC onnxruntime)
 
 target_link_libraries(ai_engine sherpa-onnx-core speaker speake_diarization)
-
-
-
-
-
-
 
 
 
@@ -178,7 +172,7 @@ if(TARGET_SOC STREQUAL "rk3588")
 
 
   # add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
-  # target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
+  # target_link_libraries(change_demo PUBLIC alsa-core -lasound -pthread speaker speake_diarization)
 
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)
@@ -230,7 +224,7 @@ else()
   # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
  
   # add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
-  # target_link_libraries(change_demo PUBLIC alsa-core litevad -lasound -pthread speaker speake_diarization)
+  # target_link_libraries(change_demo PUBLIC alsa-core -lasound -pthread speaker speake_diarization)
 
   install(TARGETS sherpa-onnx-core DESTINATION lib)
   install(TARGETS speaker DESTINATION lib)

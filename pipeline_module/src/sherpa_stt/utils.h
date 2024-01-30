@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "sentencepiece_processor.h"  //NOLINT
 
 #include "symbol-table.h"
 

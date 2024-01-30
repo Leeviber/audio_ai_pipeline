@@ -122,19 +122,19 @@ public:
 
 };
 
-int32_t init_online_audio(online_params *params)
-{
+// int32_t init_online_audio(online_params *params)
+// {
 
-    params->is_running = true;
+//     params->is_running = true;
 
-    online_audio audio_buffer;
-    audio_buffer.pcmf32_new = std::vector<float>(params->n_samples_30s, 0.0f);
-    audio_buffer.CQ_buffer.resize(params->sample_rate * 30);
-    params->audio = audio_buffer;
-    float value;
+//     online_audio audio_buffer;
+//     audio_buffer.pcmf32_new = std::vector<float>(params->n_samples_30s, 0.0f);
+//     audio_buffer.CQ_buffer.resize(params->sample_rate * 30);
+//     params->audio = audio_buffer;
+//     float value;
 
-    return 0;
-}
+//     return 0;
+// }
 
 void writeDataToFile(std::ofstream &file, bool overwrite, int tag, int first_time, double probability)
 {
@@ -254,7 +254,7 @@ int main()
             if (len >= 0)
             {
                 int bufferFrames = params.audio.pcmf32_new.size();
-                printf("bufferFrames%d",bufferFrames);
+                // printf("bufferFrames%d",bufferFrames);
  
                 // for (int i = 0; i < vad_detect_num; i++)
                 // {
@@ -276,7 +276,7 @@ int main()
         }
         printf("process \n");
         auto segmentations = mm.slide( params.audio.pcmf32_new, res_frames );
-        std::cout<<segmentations.size()<<"x"<<segmentations[0].size()<<"x"<<segmentations[0][0].size()<<std::endl;
+        // std::cout<<segmentations.size()<<"x"<<segmentations[0].size()<<"x"<<segmentations[0][0].size()<<std::endl;
 
         //////////////////////////////// Embedding /////////////////////////////////////////////////
 

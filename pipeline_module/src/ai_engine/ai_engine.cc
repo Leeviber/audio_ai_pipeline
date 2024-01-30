@@ -19,7 +19,6 @@ STTEngine::STTEngine(bool using_whisper, bool using_chinese)
 
     if (using_whisper)
     {
-
       tokens = "./bin/distil-medium.en-tokens.txt";
       std::string encoder_filename = "./bin/distil-medium.en-encoder.int8.onnx";
       std::string decoder_filename = "./bin/distil-medium.en-decoder.int8.onnx";
@@ -29,7 +28,6 @@ STTEngine::STTEngine(bool using_whisper, bool using_chinese)
       whisper.decoder = decoder_filename;
       whisper.language = "en";
       whisper.tail_paddings = 800;
-
       model_config.model_type = "whisper";
       model_config.whisper = whisper;
     }
@@ -44,7 +42,6 @@ STTEngine::STTEngine(bool using_whisper, bool using_chinese)
       transducer.encoder_filename = encoder_filename;
       transducer.decoder_filename = decoder_filename;
       transducer.joiner_filename = joiner_filename;
-
       model_config.model_type = "transducer";
       model_config.transducer = transducer;
     }
