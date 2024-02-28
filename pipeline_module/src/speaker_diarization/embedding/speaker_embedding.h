@@ -16,8 +16,8 @@
 
 #include "speaker_help.h"
 
- 
-std::vector<std::vector<double>> getEmbedding( std::shared_ptr<wespeaker::SpeakerEngine> engine, const std::vector<std::vector<float>>& dataChunks, 
-        const std::vector<std::vector<float>>& masks);
+
+// std::vector<std::vector<double>> getEmbedding(SpeakerID *speaker_id_engine, const std::vector<std::vector<float>>& dataChunks, 
+//         const std::vector<std::vector<float>>& masks);
         
 #endif

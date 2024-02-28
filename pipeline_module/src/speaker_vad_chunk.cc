@@ -8,6 +8,8 @@
 #include "speaker_diarization/speaker_diarization.h"
 #include "speaker_diarization/frontend/wav.h"
 
+#include "ai_engine.h"
+
 struct Embed_Segment
 {
     int start;
@@ -286,7 +288,7 @@ std::vector<std::vector<float>> generateDiarization(SegmentModel &mm,
                                                     const std::vector<std::pair<double, double>> &segments,
                                                     SlidingWindow &res_frames,
                                                     size_t embedding_batch_size,
-                                                    const std::shared_ptr<wespeaker::SpeakerEngine> &speaker_engine,
+                                                    SpeakerID *speaker_id_engine,
                                                     std::map<int, std::vector<Annotation::Result>>& mergedResults,
                                                     std::vector<Annotation::Result>& allSegment)
 {
@@ -348,7 +350,7 @@ std::vector<std::vector<float>> generateDiarization(SegmentModel &mm,
             // 达到batch大小时，进行embedding计算
             if (batchData.size() == embedding_batch_size)
             {
-                auto embedding = getEmbedding(speaker_engine, batchData, batchMasks);
+                auto embedding = getEmbedding(speaker_id_engine, batchData, batchMasks);
                 batchData.clear();
                 batchMasks.clear();
 
@@ -363,7 +365,7 @@ std::vector<std::vector<float>> generateDiarization(SegmentModel &mm,
     // 处理剩余的数据
     if (batchData.size() > 0)
     {
-        auto embedding = getEmbedding(speaker_engine, batchData, batchMasks);
+        auto embedding = getEmbedding(speaker_id_engine, batchData, batchMasks);
         for (auto &a : embedding)
         {
             embeddings.push_back(std::move(a));
@@ -502,6 +504,28 @@ int main() {
     auto speaker_engine = std::make_shared<wespeaker::SpeakerEngine>(
         model_paths, feat_dim, 16000,
         embedding_size, SamplesPerChunk);
+
+
+    std::vector<std::string> model_paths;
+    #ifdef USE_NPU
+    std::string rknn_model_path = "./bin/Id1_resnet34_LM_main_part.rknn";
+    std::string onnx_model_path = "./bin/Id2_resnet34_LM_post.onnx";
+    model_paths.push_back(rknn_model_path);
+    model_paths.push_back(onnx_model_path);
+
+    #else
+    // std::string onnx_model_path = "./bin/3dspeaker_speech_eres2net_base_200k_sv_zh-cn_16k-common.onnx";
+    std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
+    // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
+
+    model_paths.push_back(onnx_model_path);
+
+    #endif 
+    int embedding_size = 256;
+
+    // Init speaker id
+    SpeakerID speaker_id(model_paths, embedding_size);
+
      int seg_start = 0;
     int seg_end = 0;
     int file_count = 0;
@@ -584,7 +608,7 @@ int main() {
                     
                     std::vector<Annotation::Result> allLabel;
                     std::map<int, std::vector<Annotation::Result>> mergedResults;
-                    auto audio_chunk = generateDiarization(mm, vad_chunk_fp32, binarized, segmentations, segments,res_frames, embedding_batch_size, speaker_engine,mergedResults,allLabel);
+                    auto audio_chunk = generateDiarization(mm, vad_chunk_fp32, binarized, segmentations, segments,res_frames, embedding_batch_size, &speaker_id,mergedResults,allLabel);
                     printf("audio_chunk size%d \n",audio_chunk.size());
                     printf("allLabel size%d \n",allLabel.size());
 

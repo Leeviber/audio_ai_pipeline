@@ -1,5 +1,5 @@
-#ifndef STT_ENGINE_H
-#define STT_ENGINE_H
+#ifndef AI_ENGINE_H
+#define AI_ENGINE_H
 
 #include <algorithm>
 #include <numeric>
@@ -15,12 +15,12 @@
 
 #include "speaker_id/frontend/feature_pipeline.h"
 #include "speaker_id/speaker/speaker_model.h"
+// #include "speaker_id/speaker/speaker_engine.h"
 #include "speaker_id/speaker/rknn_speaker_model.h"
 #include "speaker_id/speaker/onnx_speaker_model.h"
 
 #include "speaker_diarization/speaker_diarization.h"
 
- 
 struct Diarization
 {
     int id;
@@ -87,6 +87,20 @@ public:
     float CosineSimilarity(const std::vector<float> &emb1,
                            const std::vector<float> &emb2);
 
+    std::vector<std::vector<double>> getEmbedding(SpeakerID *speaker_id_engine, const std::vector<std::vector<float>> &dataChunks,
+                                                  const std::vector<std::vector<float>> &masks);
+
+    std::vector<std::vector<float>> generateDiarization(SegmentModel *mm,
+                                                        const std::vector<float> &input_wav,
+                                                        const std::vector<std::vector<std::vector<double>>> &binarized,
+                                                        const std::vector<std::vector<std::vector<float>>> &segmentations,
+                                                        const std::vector<std::pair<double, double>> &segments,
+                                                        SlidingWindow &res_frames,
+                                                        size_t embedding_batch_size,
+                                                        SpeakerID *speaker_id_engine,
+                                                        std::map<int, std::vector<Annotation::Result>> &mergedResults,
+                                                        std::vector<Annotation::Result> &allSegment);
+
 private:
     std::shared_ptr<wespeaker::SpeakerModel> rknn_model_ = nullptr;
 
@@ -103,6 +117,8 @@ private:
     int per_chunk_samples_ = 32000;
 
     int sample_rate_ = 16000;
+
+    
 };
 
 class VADChunk
@@ -120,7 +136,7 @@ public:
 
     void STT(STTEngine *stt_interface);
 
-    void SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst);
+    void SpeakerDiarization(SegmentModel *mm, STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst);
 
     void printSTTAnnotation(double start, double end, const std::string &text);
 
@@ -134,7 +150,7 @@ public:
 private:
     int sampleRate = 16000;
 
-    float min_segment_length = 0.5;
+    float min_segment_length = 1;
 
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
 
@@ -147,6 +163,11 @@ private:
     std::string fileName;
 
 
+    std::vector<std::vector<double>> global_embedding;
+    std::vector<Annotation::Result> global_annote;
+    std::vector<std::vector<double>> filter_global_embedding;
+    std::vector<Annotation::Result> filter_global_annote;
+    std::vector< std::string> texts;
 };
 
 #endif // STT_ENGINE_H

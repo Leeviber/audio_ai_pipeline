@@ -377,7 +377,7 @@ std::vector<std::vector<float>> generateDiarization(SegmentModel &mm,
                                                     const std::vector<std::pair<double, double>> &segments,
                                                     SlidingWindow &res_frames,
                                                     size_t embedding_batch_size,
-                                                    const std::shared_ptr<wespeaker::SpeakerEngine> &speaker_engine,
+                                                    SpeakerID *speaker_id_engine,
                                                     std::map<int, std::vector<Annotation::Result>>& mergedResults)
 {
     std::vector<std::vector<float>> batchData;
@@ -439,7 +439,7 @@ std::vector<std::vector<float>> generateDiarization(SegmentModel &mm,
             // 达到batch大小时，进行embedding计算
             if (batchData.size() == embedding_batch_size)
             {
-                auto embedding = getEmbedding(speaker_engine, batchData, batchMasks);
+                auto embedding = getEmbedding(speaker_id_engine, batchData, batchMasks);
                 batchData.clear();
                 batchMasks.clear();
 
@@ -454,7 +454,7 @@ std::vector<std::vector<float>> generateDiarization(SegmentModel &mm,
     // 处理剩余的数据
     if (batchData.size() > 0)
     {
-        auto embedding = getEmbedding(speaker_engine, batchData, batchMasks);
+        auto embedding = getEmbedding(speaker_id_engine, batchData, batchMasks);
         for (auto &a : embedding)
         {
             embeddings.push_back(std::move(a));

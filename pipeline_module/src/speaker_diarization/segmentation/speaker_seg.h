@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cmath>
 #include <numeric>
+#include <map>
 #include <type_traits>
 #include <limits>
 #include <algorithm>
@@ -347,27 +348,6 @@ public:
     }
 
 };
-// np.max( segmentation[:, cluster == k], axis=1 )
-std::vector<float> max_segmentation_cluster(const std::vector<std::vector<float>>& segmentation,
-                                       const std::vector<int>& cluster, int k) 
-{
-    std::vector<float> maxValues( segmentation.size());
-    for (size_t i = 0; i < segmentation.size(); ++i) 
-    {
-        float maxValue = -std::numeric_limits<float>::infinity();
-
-        for (size_t j = 0; j < cluster.size(); ++j) 
-        {
-            if (cluster[j] == k) 
-            {
-                maxValue = std::max(maxValue, segmentation[i][j]);
-            }
-        }
-        maxValues[i] = maxValue;
-    }
-
-    return maxValues;
-}
 
 class SegmentModel : public OnnxModel 
 {
@@ -959,6 +939,9 @@ public:
 
 }; // SegmentModel
 
+// np.max( segmentation[:, cluster == k], axis=1 )
+std::vector<float> max_segmentation_cluster(const std::vector<std::vector<float>>& segmentation,
+                                       const std::vector<int>& cluster, int k);
 
 template<typename T>
 std::vector<std::vector<T>> crop_segment( const std::vector<std::vector<T>>& data,
@@ -1036,128 +1019,8 @@ bool to_diarization( std::vector<std::vector<std::vector<double>>>& segmentation
         const std::vector<int>& count,
         const SlidingWindow& count_frames, 
         SlidingWindow& to_diarization_frames,
-        std::vector<std::vector<double>>& binary)
-{
-    // python: activations = Inference.aggregate(...
-    SlidingWindow activations_frames;
-    auto activations = PipelineHelper::aggregate( segmentations, 
-            segmentations_frames, 
-            count_frames, 
-            activations_frames, 
-            false, 0.0, true );
+        std::vector<std::vector<double>>& binary);
 
-#ifdef WRITE_DATA
-    debugWrite2d( activations, "cpp_to_diarization_activations" );
-
-    /*
-    std::ifstream fd("/tmp/py_to_diarization_activations.txt"); //taking file as inputstream
-    int cnt = 0;
-    for( std::string line; getline( fd, line ); )
-    {
-        std::string delimiter = ",";
-        std::vector<std::string> v = Helper::split(line, delimiter);
-        v.pop_back();
-        for( size_t i = 0; i < v.size(); ++i )
-        {
-            activations[cnt][i] = std::stof( v[i] );
-        }
-        cnt++;
-    }
-    */
-#endif 
-
-    // python: _, num_speakers = activations.data.shape
-    size_t num_speakers = activations[0].size();
-
-    // python: count.data = np.minimum(count.data, num_speakers)
-    // here also convert 1d to 2d later need pass to crop_segment
-    std::vector<std::vector<int>> converted_count( count.size(), std::vector<int>( 1 ));
-    for( size_t i = 0; i < count.size(); ++i )
-    {
-        if( count[i] > num_speakers )
-            converted_count[i][0] = num_speakers;
-        else
-            converted_count[i][0] = count[i];
-    }
-
-    // python: extent = activations.extent & count.extent
-    // get extent then calc intersection, check extent() of 
-    // SlidingWindowFeature and __and__() of Segment
-    // Get activations.extent
-    double tmpStart = activations_frames.start + (0 - .5) * activations_frames.step + 
-        .5 * activations_frames.duration;
-    double duration = activations.size() * activations_frames.step;
-    double activations_end = tmpStart + duration;
-    double activations_start = activations_frames.start;
-
-    // Get count.extent
-    tmpStart = count_frames.start + (0 - .5) * count_frames.step + .5 * count_frames.duration;
-    duration = count.size() * count_frames.step;
-    double count_end = tmpStart + duration;
-    double count_start = count_frames.start;
-
-    // __and__(), max of start, min of end
-    double intersection_start = std::max( activations_start, count_start );
-    double intersection_end = std::min( activations_end, count_end );
-    Segment focus( intersection_start, intersection_end );
-    SlidingWindow cropped_activations_frames;
-    auto cropped_activations = crop_segment( activations, activations_frames, focus, 
-            cropped_activations_frames );
-
-    SlidingWindow cropped_count_frames;
-    auto cropped_count = crop_segment( converted_count, count_frames, focus, 
-            cropped_count_frames );
-
-#ifdef WRITE_DATA
-    debugWrite2d( cropped_activations, "cpp_cropped_activations" );
-    debugWrite2d( cropped_count, "cpp_cropped_count" );
-#endif // WRITE_DATA
-
-    // python: sorted_speakers = np.argsort(-activations, axis=-1)
-    std::vector<std::vector<int>> sorted_speakers( cropped_activations.size(),
-            std::vector<int>( cropped_activations[0].size()));
-    int ss_index = 0;
-    for( auto& a : cropped_activations )
-    {
-        // -activations
-        for( size_t i = 0; i < a.size(); ++i ) a[i] = -1.0 * a[i];
-        auto indices = Helper::argsort( a );
-        sorted_speakers[ss_index++].swap( indices );
-    }
-#ifdef WRITE_DATA
-    debugWrite2d( sorted_speakers, "cpp_sorted_speakers" );
-#endif // WRITE_DATA
-
-    assert( cropped_activations.size() > 0 );
-    assert( cropped_activations[0].size() > 0 );
-
-    // python: binary = np.zeros_like(activations.data)
-    binary.resize( cropped_activations.size(),
-        std::vector<double>( cropped_activations[0].size(), 0.0 ));
-
-    // python: for t, ((_, c), speakers) in enumerate(zip(count, sorted_speakers)):
-    // NOTE: here c is data of count, not sliding window, see __next__ of SlidingWindowFeature
-    // in python code
-    assert( cropped_count.size() <= sorted_speakers.size());
-
-    // following code based on this cropped_count is one column data, if not 
-    // need below code
-    assert( cropped_count[0].size() == 1 );
-    for( size_t i = 0; i < cropped_count.size(); ++i )
-    {
-        int k = cropped_count[i][0];
-        assert( k <= binary[0].size());
-        for( size_t j = 0; j < k; ++j )
-        {
-            assert( sorted_speakers[i][j] < cropped_count.size());
-            binary[i][sorted_speakers[i][j]] = 1.0f;
-        }
-    }
-
-    to_diarization_frames = cropped_activations_frames;
-
-    return true;
-}
 // pyannote/audio/pipelines/speaker_diarization.py:403, def reconstruct(
 std::vector<std::vector<double>> reconstruct( 
         const std::vector<std::vector<std::vector<float>>>& segmentations,
@@ -1165,58 +1028,8 @@ std::vector<std::vector<double>> reconstruct(
         const std::vector<std::vector<int>>& hard_clusters, 
         const std::vector<int>& count_data,
         const SlidingWindow& count_frames,
-        SlidingWindow& activations_frames)
-{
-    size_t num_chunks = segmentations.size();
-    size_t num_frames = segmentations[0].size();
-    size_t local_num_speakers = segmentations[0][0].size();
-
-    // python: num_clusters = np.max(hard_clusters) + 1
-    // Note, element in hard_clusters have negative number, don't define num_cluster as size_t
-    int num_clusters = 0;
-    for( size_t i = 0; i < hard_clusters.size(); ++i )
-    {
-        for( size_t j = 0; j < hard_clusters[0].size(); ++j )
-        {
-            if( hard_clusters[i][j] > num_clusters )
-                num_clusters = hard_clusters[i][j];
-        }
-    }
-    num_clusters++;
-    assert( num_clusters > 0 );
-
-    // python: for c, (cluster, (chunk, segmentation)) in enumerate(...
-    std::vector<std::vector<std::vector<double>>> clusteredSegmentations( num_chunks, 
-            std::vector<std::vector<double>>( num_frames, std::vector<double>( num_clusters, NAN)));
-    for( size_t i = 0; i < num_chunks; ++i ) 
-    {
-        const auto& cluster = hard_clusters[i];
-        const auto& segmentation = segmentations[i];
-        for( auto k : cluster )
-        {
-            if( abs( k + 2 ) < std::numeric_limits<double>::epsilon()) // check if it equals -2
-            {
-                continue;
-            }
-
-            auto max_sc = max_segmentation_cluster( segmentation, cluster, k );
-            assert( k < num_clusters );
-            assert( max_sc.size() > 0 );
-            assert( max_sc.size() == num_frames );
-            for( size_t m = 0; m < num_frames; ++m )
-            {
-                clusteredSegmentations[i][m][k] = max_sc[m];
-            }
-        }
-    }
-
+        SlidingWindow& activations_frames);
  
-
-    std::vector<std::vector<double>> diarizationRes;
-    to_diarization( clusteredSegmentations, segmentations_frames, 
-            count_data, count_frames, activations_frames, diarizationRes );
-    return diarizationRes;
-}
 struct Annotation 
 {
     struct Result
@@ -1385,85 +1198,27 @@ struct Annotation
 Annotation to_annotation( const std::vector<std::vector<double>>& scores,
         const SlidingWindow& frames,
         double onset, double offset, 
-        double min_duration_on, double min_duration_off)
-{
-    // call binarize : pyannote/audio/utils/signal.py: 287
-    size_t num_frames = scores.size();
-    size_t num_classes = scores[0].size();
+        double min_duration_on, double min_duration_off);
+ 
 
-    // python: timestamps = [frames[i].middle for i in range(num_frames)]
-    std::vector<double> timestamps( num_frames );
-    for( size_t i = 0; i < num_frames; ++i )
-    {
-        double start = frames.start + i * frames.step;
-        double end = start + frames.duration;
-        timestamps[i] = ( start + end ) / 2;
-    }
+// 运行分割模型并返回模型输出
+std::vector<std::vector<std::vector<double>>> runSegmentationModel(SegmentModel *mm,const std::vector<float> &input_wav,
+                                                                   std::vector<std::pair<double, double>> &segments,
+                                                                   std::vector<std::vector<std::vector<float>>> &segmentations,
+                                                                   SlidingWindow &res_frames
+                                                                   );
+std::vector<float> countSpeakerProbabilities(const std::vector<std::vector<std::vector<double>>> &binarized);
 
-    // python: socre.data.T
-    std::vector<std::vector<double>> inversed( num_classes, std::vector<double>( num_frames ));
-    for( size_t i = 0; i < num_frames; ++i )
-    {
-        for( size_t j = 0; j < num_classes; ++j )
-        {
-            inversed[j][i] = scores[i][j];
-        }
-    }
+bool shouldProcess(const std::vector<float> &speaker_counts, float threshold);
+std::vector<int16_t> floatToShort(const std::vector<float>& floatVector);
 
-    Annotation active;
-    double pad_onset = 0.0;
-    double pad_offset = 0.0;
-    for( size_t i = 0; i< num_classes; ++i )
-    {
-        int label = i;
-        double start = timestamps[0];
-        bool is_active = false;
-        if( inversed[i][0] > onset )
-        {
-            is_active = true;
-        }
-        for( size_t j = 1; j < num_frames; ++j )
-        {
-            // currently active
-            if(is_active)
-            {
-                // switching from active to inactive
-                if( inversed[i][j] < offset )
-                {
-                    Segment region(start - pad_onset, timestamps[j] + pad_offset);
-                    active.addSegment(region.start, region.end, label);
-                    start = timestamps[j];
-                    is_active = false;
-                }
-            }
-            else
-            {
-                if( inversed[i][j] > onset )
-                {
-                    start = timestamps[j];
-                    is_active = true;
-                }
-            }
-        }
+ void mergeSegments(const std::vector<Annotation::Result> &results, const std::vector<float> &input_wav,
+                   std::map<int, std::vector<Annotation::Result>> &mergedResults,
+                   std::vector<std::vector<float>> &audioSegments,
+                   std::vector<Annotation::Result> &allSegment);
 
-        if(is_active)
-        {
-            Segment region(start - pad_onset, timestamps.back() + pad_offset);
-            active.addSegment(region.start, region.end, label);
-        }
-    }
+std::vector<int> mergeAndRenumberNumbers(const std::vector<int> &numbers);
 
-    // because of padding, some active regions might be overlapping: merge them.
-    // also: fill same speaker gaps shorter than min_duration_off
-    if( pad_offset > 0.0 || pad_onset > 0.0  || min_duration_off > 0.0 )
-        active.support( min_duration_off );
+std::string secondsToMinutesAndSeconds(double seconds);
 
-    // remove tracks shorter than min_duration_on
-    if( min_duration_on > 0 )
-    {
-        active.removeShort( min_duration_on );
-    }
-
-    return active;
-}
 #endif

@@ -26,16 +26,25 @@ int main()
 
   /////////// Init chunk VAD //////////////////
 
-  int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
+  int vad_frame_ms = 32; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
-  float min_silence_duration = 0.1;
-  float vad_threshold = 0.65;
+  float min_silence_duration = 0.2;
+  float vad_threshold = 0.85;
   bool saveAnanotation = true;
   std::string filename = "diarization_output.txt";
+  int test_window_samples = vad_frame_ms * (16000 / 1000);
 
   VADChunk vad_chunk_stt(vad_path, vad_frame_ms, vad_threshold, 
   min_silence_duration, saveAnanotation, filename);
   //////////////////////////////////////
+
+
+  /////////// Init Segmentation model //////////////////
+
+  const std::string segmentModel = "./bin/seg_model.onnx";
+  SegmentModel mm(segmentModel);
+  //////////////////////////////////////
+
 
   /////////// Init speaker id and cluster //////////////////
 
@@ -54,7 +63,7 @@ int main()
   model_paths.push_back(onnx_model_path);
 
 #endif 
-  int embedding_size = 512;
+  int embedding_size = 256;
 
   // Init speaker id
   SpeakerID speaker_id(model_paths, embedding_size);
@@ -65,7 +74,7 @@ int main()
   printf("Init success\n");
   //// Main loop for audio real time process //////
   //////////////////////////////////////
-  std::string audio_path = "./bin/output.wav";
+  std::string audio_path = "./bin/speaker_diarization_long_test/8speaker.wav";
   auto data_reader = wenet::ReadAudioFile(audio_path);
   int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
   int samples = data_reader->num_sample();
@@ -75,11 +84,7 @@ int main()
       enroll_data_flt32[i] = static_cast<float>(enroll_data_int16[i]) / 32768;
   }
 
-  std::string path = "./bin/silero_vad.onnx";
-  int test_sr = 16000;
-  int test_frame_ms = 96;
-    int test_window_samples = test_frame_ms * (test_sr / 1000);
-
+ 
 
   // 记录开始时间
   auto start = std::chrono::high_resolution_clock::now();
@@ -95,7 +100,7 @@ int main()
       vad_chunk_stt.PushAudioChunk(window_chunk);
       break;  
     }
-    vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
+    vad_chunk_stt.SpeakerDiarization(&mm, &stt_interface, &speaker_id, &cluster);
     
   }
 

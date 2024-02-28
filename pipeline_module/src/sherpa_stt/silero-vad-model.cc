@@ -112,13 +112,13 @@ class SileroVadModel::Impl {
       // start speaking, but we require that it must satisfy
       // min_speech_duration
       temp_start_ = current_sample_;
-      return false;
+      return true;
     }
 
     if (prob > threshold && temp_start_ != 0 && !triggered_) {
-      if (current_sample_ - temp_start_ < min_speech_samples_) {
-        return false;
-      }
+      // if (current_sample_ - temp_start_ < min_speech_samples_) {
+      //   return false;
+      // }
 
       triggered_ = true;
 

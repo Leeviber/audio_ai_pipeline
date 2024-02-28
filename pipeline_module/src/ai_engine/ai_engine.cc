@@ -1,58 +1,57 @@
+#ifndef AI_ENGINE_H
+
 #include "ai_engine.h"
-
-
 
 // WAV 文件头结构
 struct WavHeader
 {
-    char chunkId[4];
-    uint32_t chunkSize;
-    char format[4];
-    char subchunk1Id[4];
-    uint32_t subchunk1Size;
-    uint16_t audioFormat;
-    uint16_t numChannels;
-    uint32_t sampleRate;
-    uint32_t byteRate;
-    uint16_t blockAlign;
-    uint16_t bitsPerSample;
-    char subchunk2Id[4];
-    uint32_t subchunk2Size;
+  char chunkId[4];
+  uint32_t chunkSize;
+  char format[4];
+  char subchunk1Id[4];
+  uint32_t subchunk1Size;
+  uint16_t audioFormat;
+  uint16_t numChannels;
+  uint32_t sampleRate;
+  uint32_t byteRate;
+  uint16_t blockAlign;
+  uint16_t bitsPerSample;
+  char subchunk2Id[4];
+  uint32_t subchunk2Size;
 };
 
 // 保存 WAV 文件
 void saveWavFile(const std::string &filename, const std::vector<int16_t> &data, uint16_t numChannels, uint32_t sampleRate, uint16_t bitsPerSample)
 {
-    std::ofstream file(filename, std::ios::binary);
+  std::ofstream file(filename, std::ios::binary);
 
-    // 创建 WAV 文件头
-    WavHeader header;
-    strncpy(header.chunkId, "RIFF", 4);
-    header.chunkSize = data.size() * sizeof(int16_t) + sizeof(WavHeader) - 8;
-    strncpy(header.format, "WAVE", 4);
-    strncpy(header.subchunk1Id, "fmt ", 4);
-    header.subchunk1Size = 16;
-    header.audioFormat = 1;
-    header.numChannels = numChannels;
-    header.sampleRate = sampleRate;
-    header.bitsPerSample = bitsPerSample;
-    header.byteRate = sampleRate * numChannels * bitsPerSample / 8;
-    header.blockAlign = numChannels * bitsPerSample / 8;
-    strncpy(header.subchunk2Id, "data", 4);
-    header.subchunk2Size = data.size() * sizeof(int16_t);
+  // 创建 WAV 文件头
+  WavHeader header;
+  strncpy(header.chunkId, "RIFF", 4);
+  header.chunkSize = data.size() * sizeof(int16_t) + sizeof(WavHeader) - 8;
+  strncpy(header.format, "WAVE", 4);
+  strncpy(header.subchunk1Id, "fmt ", 4);
+  header.subchunk1Size = 16;
+  header.audioFormat = 1;
+  header.numChannels = numChannels;
+  header.sampleRate = sampleRate;
+  header.bitsPerSample = bitsPerSample;
+  header.byteRate = sampleRate * numChannels * bitsPerSample / 8;
+  header.blockAlign = numChannels * bitsPerSample / 8;
+  strncpy(header.subchunk2Id, "data", 4);
+  header.subchunk2Size = data.size() * sizeof(int16_t);
 
-    // 写入文件头
-    file.write(reinterpret_cast<const char *>(&header), sizeof(WavHeader));
+  // 写入文件头
+  file.write(reinterpret_cast<const char *>(&header), sizeof(WavHeader));
 
-    // 写入音频数据
-    file.write(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(int16_t));
+  // 写入音频数据
+  file.write(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(int16_t));
 
-    // 关闭文件
-    file.close();
+  // 关闭文件
+  file.close();
 
-    std::cout << "WAV 文件保存成功：" << filename << std::endl;
+  std::cout << "WAV 文件保存成功：" << filename << std::endl;
 }
-
 
 STTEngine::STTEngine(bool using_whisper, bool using_chinese)
 {
@@ -172,7 +171,7 @@ void VADChunk::STT(STTEngine *stt_interface)
   }
 }
 
-void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
+void VADChunk::SpeakerDiarization(SegmentModel *mm, STTEngine *stt_interface, SpeakerID *speaker_id_engine, Cluster *cst)
 {
 
   if (!vad_->Empty())
@@ -183,86 +182,199 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
     std::string basePath = "test_audio/new_sd_audio_output/";
     std::string prefix = "audio";
     std::string fileExtension = ".wav";
+    // std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
+    // file_count += 1;
+    // saveWavFile(filename, enroll_data_int16, 1, 16000, 16);
 
-    std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
-    file_count += 1;
-    // if (segment_length < min_segment_length * sampleRate)
-    // {
-    //   printf("\n vad pop \n");
-    //   vad_->Pop();
-    //   return;
-    // }
+    if (segment_length < min_segment_length * sampleRate)
+    {
+      printf("\n vad pop \n");
+      vad_->Pop();
+      return;
+    }
 
     float start = (float)segment.start / sampleRate;
     float end = (float)(segment.start + segment_length) / sampleRate;
 
-    std::string text = stt_interface->perform_stt(&segment.samples);
+    
     std::vector<int16_t> enroll_data_int16(segment_length);
 
     for (int i = 0; i < segment_length; i++)
     {
       enroll_data_int16[i] = static_cast<int16_t>(segment.samples[i] * 32767.0f);
     }
-    saveWavFile(filename, enroll_data_int16, 1, 16000, 16);
 
-    std::vector<float> chunk_emb(speaker_id_engine->EmbeddingSize(), 0);
+    double start_time = static_cast<double>(segment.start) / sampleRate;
+    double end_time = static_cast<double>(segment.start + segment.samples.size()) / sampleRate;
+    start_time = floor(start_time * 100) / 100; // Keep only 2 decimal places
+    end_time = floor(end_time * 100) / 100;     // Keep only 2 decimal places
 
-    speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);
+    std::vector<std::pair<double, double>> segments;
+    std::vector<std::vector<std::vector<float>>> segmentations;
+    SlidingWindow res_frames;
 
-    int match_idx = speaker_id_engine->FindMaxSimilarityKey(chunk_emb);
-
-    if (match_idx != -1)
+    auto binarized = runSegmentationModel(mm, segment.samples, segments, segmentations, res_frames);
+    int num_chunk = binarized.size();
+    int num_frame = binarized[0].size();
+    int frame_total = num_chunk * num_frame;
+    std::vector<float> speaker_prob = countSpeakerProbabilities(binarized);
+    for (int i = 0; i < speaker_prob.size(); ++i)
     {
-      printf("matched\n");
+      std::cout << "Speaker " << i << ": " << speaker_prob[i] << std::endl;
+    }
 
-      speaker_id_engine->UpdateAverageEmbedding(match_idx, chunk_emb);
-      int text_size = diarization_annote[match_idx].texts.size();
+    int num_chunk_thres = 1;
+    float thres = (num_chunk <= 1) ? 0.3 : 0.2;
+    int embedding_size = speaker_id_engine->EmbeddingSize();
+    std::vector<std::vector<double>> tmp_embedding;
+    std::vector<Annotation::Result> tmp_annote;
+    if (shouldProcess(speaker_prob, thres))
+    {
 
-      diarization_sequence.push_back(DiarizationSequence(match_idx, text_size));
+      std::vector<Annotation::Result> allLabel;
+      std::map<int, std::vector<Annotation::Result>> mergedResults;
+      auto audio_chunk = speaker_id_engine->generateDiarization(mm, segment.samples, binarized, segmentations, segments, res_frames, 32, speaker_id_engine, mergedResults, allLabel);
+      printf("audio_chunk size%d \n", audio_chunk.size());
+      printf("allLabel size%d \n", allLabel.size());
 
-      diarization_annote[match_idx].addDiarization(start, end, text);
+      for (int i = 0; i < audio_chunk.size(); i++)
+      {
+        std::vector<int16_t> shortVector = floatToShort(audio_chunk[i]);
+
+        std::vector<float> single_emb(embedding_size, 0.0);
+        speaker_id_engine->ExtractEmbedding(shortVector.data(),
+                                            shortVector.size(),
+                                            &single_emb);
+        std::vector<double> double_embedding(single_emb.begin(), single_emb.end());
+
+        tmp_embedding.push_back(double_embedding);
+        Annotation::Result corret_label(allLabel[i].start + start_time, allLabel[i].end + end_time, allLabel[i].label);
+        tmp_annote.push_back(corret_label);
+
+        std::string text = stt_interface->perform_stt(&audio_chunk[i]);
+        texts.push_back(text);
+
+        std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
+        file_count += 1;
+        saveWavFile(filename, floatToShort(audio_chunk[i]), 1, 16000, 16);
+
+
+      }
+
+      std::cout << "Processing segment...\n";
+      // 在这里添加你想要执行的处理逻辑
     }
     else
     {
-      printf("unmatched\n");
 
-      speaker_id_engine->AddNewKeyValue(chunk_emb);
+      std::vector<float> single_emb(embedding_size, 0.0);
+      speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(),
+                                          enroll_data_int16.size(),
+                                          &single_emb);
 
-      std::vector<std::vector<double>> idArray;
-      speaker_id_engine->MapToDoubleArray(idArray);
-      int min_clu_size = idArray.size();
-      std::vector<int> clustersRes; // 存储聚类结果
-      cst->custom_clustering(idArray, clustersRes);
-      std::vector<int> id_list;
+      std::vector<double> double_embedding(single_emb.begin(), single_emb.end());
 
-      id_list = cst->mergeAndRenumber(clustersRes);
+      tmp_embedding.push_back(double_embedding);
+      Annotation::Result corret_label(start_time, end_time, 0);
+      tmp_annote.push_back(corret_label);
+      std::string text = stt_interface->perform_stt(&segment.samples);
+      texts.push_back(text);
 
-      if (id_list.size() < 1)
-      {
-        diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
-        diarization_sequence.push_back(DiarizationSequence(0, 0));
-      }
-      else
-      {
-        diarization_sequence.push_back(DiarizationSequence(diarization_annote.size(), 0));
-        diarization_annote.push_back(Diarization(id_list[-1], {start}, {end}, {text}));
-
-        for (int i = 0; i < diarization_annote.size(); i++)
-        {
-          if (diarization_annote[i].id != id_list[i])
-          {
-            diarization_annote[i].id = id_list[i];
-          }
-        }
-      }
+      std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
+      file_count += 1;
+      saveWavFile(filename, enroll_data_int16, 1, 16000, 16);
+      std::cout << "Skipping segment...\n";
     }
 
-    printAllDiarizations(true); // true mean the result will print in sequence
-                                // false will print in group
-    if (dumpOutput)
+    for (int i = 0; i < tmp_embedding.size(); ++i)
     {
-      saveDiarizationsAnnotation(fileName, true, false);
+
+      if (!std::isnan(tmp_embedding[i][0]))
+      { // Assuming all elements in the innermost array are NaN or not NaN
+        filter_global_embedding.push_back(tmp_embedding[i]);
+        filter_global_annote.push_back(tmp_annote[i]);
+      }
     }
+
+    // Perform clustering on embeddings
+    Cluster cst;
+    std::vector<int> clustersRes;
+    cst.custom_clustering(filter_global_embedding, clustersRes);
+    // 合并并重新编号聚类结果的数字
+    std::vector<int> merged_renumbered_numbers;
+    merged_renumbered_numbers = mergeAndRenumberNumbers(clustersRes);
+
+    // Output clustering results
+    for (size_t i = 0; i < merged_renumbered_numbers.size(); ++i)
+    {
+      std::cout << "Audio start: " << secondsToMinutesAndSeconds(filter_global_annote[i].start) << ", end: " << secondsToMinutesAndSeconds(filter_global_annote[i].end) << " belongs to cluster " << merged_renumbered_numbers[i] << 
+      "  text:"<<texts[i]<<std::endl;
+    }
+
+    // for(int i=0;i<global_embedding.size();i++)
+    // {
+
+    //   std::vector<float> chunk_emb =global_embedding[i];
+
+    //   // speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);
+
+    //   int match_idx = speaker_id_engine->FindMaxSimilarityKey(chunk_emb);
+
+    //   if (match_idx != -1)
+    //   {
+    //     printf("matched\n");
+
+    //     speaker_id_engine->UpdateAverageEmbedding(match_idx, chunk_emb);
+    //     int text_size = diarization_annote[match_idx].texts.size();
+
+    //     diarization_sequence.push_back(DiarizationSequence(match_idx, text_size));
+
+    //     diarization_annote[match_idx].addDiarization(start, end, text);
+    //   }
+    //   else
+    //   {
+    //     printf("unmatched\n");
+
+    //     speaker_id_engine->AddNewKeyValue(chunk_emb);
+
+    //     std::vector<std::vector<double>> idArray;
+    //     speaker_id_engine->MapToDoubleArray(idArray);
+    //     int min_clu_size = idArray.size();
+
+    //     std::vector<int> clustersRes; // 存储聚类结果
+    //     cst->custom_clustering(idArray, clustersRes);
+    //     std::vector<int> id_list;
+    //     id_list = cst->mergeAndRenumber(clustersRes);
+
+    //     if (id_list.size() < 1)
+    //     {
+    //       diarization_annote.push_back(Diarization(0, {start}, {end}, {text}));
+    //       diarization_sequence.push_back(DiarizationSequence(0, 0));
+    //     }
+    //     else
+    //     {
+    //       diarization_sequence.push_back(DiarizationSequence(diarization_annote.size(), 0));
+    //       diarization_annote.push_back(Diarization(id_list[-1], {start}, {end}, {text}));
+
+    //       for (int i = 0; i < diarization_annote.size(); i++)
+    //       {
+    //         if (diarization_annote[i].id != id_list[i])
+    //         {
+    //           diarization_annote[i].id = id_list[i];
+    //         }
+    //       }
+    //     }
+    //   }
+
+    //   printAllDiarizations(true); // true mean the result will print in sequence
+    //                               // false will print in group
+    //   if (dumpOutput)
+    //   {
+    //     saveDiarizationsAnnotation(fileName, true, false);
+    //   }
+
+    // }
+
     vad_->Pop();
   }
 
@@ -597,3 +709,265 @@ void SpeakerID::AddNewKeyValue(const std::vector<float> &newValue)
 
   averageEmbeddings[newKey] = newValue;
 }
+
+int embed_model_size = 256;
+
+int16_t floatToInt16(float value)
+{
+  // return static_cast<int16_t>(std::round(value));
+  return static_cast<int16_t>(std::round(value * 32767.0f));
+}
+
+std::vector<std::vector<double>> SpeakerID::getEmbedding(SpeakerID *speaker_id_engine, const std::vector<std::vector<float>> &dataChunks,
+                                                         const std::vector<std::vector<float>> &masks)
+{
+
+  // Debug
+  static int number = 0;
+
+  size_t batch_size = dataChunks.size();
+  size_t num_samples = dataChunks[0].size();
+
+  // python: imasks = F.interpolate(... ) and imasks = imasks > 0.5
+  auto imasks = Helper::interpolate(masks, num_samples, 0.5);
+
+  // masks is [32x293] imask is [32x80000], dataChunks is [32x80000] as welll
+
+  // python: signals = pad_sequence(...)
+  auto signals = Helper::padSequence(dataChunks, imasks);
+
+  // python: wav_lens = imasks.sum(dim=1)
+  std::vector<float> wav_lens(batch_size, 0.0);
+  float max_len = 0;
+  int index = 0;
+  for (const auto &a : imasks)
+  {
+    float tmp = std::accumulate(a.begin(), a.end(), 0.0);
+    wav_lens[index++] = tmp;
+    if (tmp > max_len)
+      max_len = tmp;
+  }
+
+  // python: if max_len < self.min_num_samples: return np.NAN * np.zeros(...
+  if (max_len < 640)
+  {
+    // TODO: don't call embedding process, direct return
+    // batch_size x 192, where 192 is size of length embedding result for each waveform
+    // python: return np.NAN * np.zeros((batch_size, self.dimension))
+    std::vector<std::vector<double>> embeddings(batch_size, std::vector<double>(embed_model_size, NAN));
+    return embeddings;
+  }
+
+  // python:
+  //      too_short = wav_lens < self.min_num_samples
+  //      wav_lens = wav_lens / max_len
+  //      wav_lens[too_short] = 1.0
+  std::vector<bool> too_short(wav_lens.size(), false);
+  for (size_t i = 0; i < wav_lens.size(); ++i)
+  {
+    if (wav_lens[i] < 640)
+    {
+      wav_lens[i] = 1.0;
+      too_short[i] = true;
+    }
+    else
+    {
+      wav_lens[i] /= max_len;
+    }
+  }
+
+  // signals is [32x80000], wav_lens is of length 32 of 1d array, an example for wav_lens
+  // [1.0000, 1.0000, 1.0000, 0.0512, 1.0000, 1.0000, 0.1502, ...]
+  // Now call embedding model to get embeddings of batches
+  // speechbrain/pretrained/interfaces.py:903
+  std::vector<std::vector<int16_t>> signals_int16(signals.size(), std::vector<int16_t>(num_samples));
+
+  std::vector<std::vector<float>> embeddings_f(signals.size(),
+                                               std::vector<float>(embed_model_size, 0.0));
+
+  for (int i = 0; i < batch_size; i++)
+  {
+    std::transform(signals[i].begin(), signals[i].end(), signals_int16[i].begin(), floatToInt16);
+
+    std::vector<float> single_emb(embed_model_size, 0.0);
+    speaker_id_engine->ExtractEmbedding(signals_int16[i].data(),
+                                        num_samples,
+                                        &single_emb);
+    embeddings_f[i] = single_emb;
+  }
+
+  // auto embeddings_f = em.infer( signals, wav_lens );
+
+  // Convert float to double
+  size_t col = embeddings_f[0].size();
+  std::vector<std::vector<double>> embeddings(embeddings_f.size(),
+                                              std::vector<double>(col));
+
+  // python: embeddings[too_short.cpu().numpy()] = np.NAN
+  for (size_t i = 0; i < too_short.size(); ++i)
+  {
+    if (too_short[i])
+    {
+      for (size_t j = 0; j < col; ++j)
+      {
+        embeddings[i][j] = NAN;
+      }
+    }
+    else
+    {
+      for (size_t j = 0; j < col; ++j)
+      {
+        embeddings[i][j] = static_cast<double>(embeddings_f[i][j]);
+      }
+    }
+  }
+  // std::cout<<"embeddings "<<embeddings.size()<<embeddings[0].size()<<std::endl;
+
+  return embeddings;
+}
+
+std::vector<std::vector<float>> SpeakerID::generateDiarization(SegmentModel *mm,
+                                                               const std::vector<float> &input_wav,
+                                                               const std::vector<std::vector<std::vector<double>>> &binarized,
+                                                               const std::vector<std::vector<std::vector<float>>> &segmentations,
+                                                               const std::vector<std::pair<double, double>> &segments,
+                                                               SlidingWindow &res_frames,
+                                                               size_t embedding_batch_size,
+                                                               SpeakerID *speaker_id_engine,
+                                                               std::map<int, std::vector<Annotation::Result>> &mergedResults,
+                                                               std::vector<Annotation::Result> &allSegment)
+{
+  std::vector<std::vector<float>> batchData;
+  std::vector<std::vector<float>> batchMasks;
+  std::vector<std::vector<double>> embeddings;
+
+  double duration = 5.0;
+  int num_samples = input_wav.size();
+  SlidingWindow count_frames(num_samples);
+  double self_frame_step = 0.016875;
+  double self_frame_duration = 0.016875;
+  double self_frame_start = 0.0;
+  size_t min_num_samples = 640;
+  SlidingWindow pre_frame(self_frame_start, self_frame_step, self_frame_duration);
+  auto count_data = mm->speaker_count(segmentations, binarized,
+                                      pre_frame, count_frames, num_samples);
+  // 计算最小帧数
+  size_t min_num_frames = ceil(binarized[0].size() * min_num_samples / (duration * 16000));
+
+  // 清理分割结果
+  auto clean_segmentations = Helper::cleanSegmentations(binarized);
+  assert(binarized.size() == clean_segmentations.size());
+  // 生成embedding
+  for (size_t i = 0; i < binarized.size(); ++i)
+  {
+    auto chunkData = mm->crop(input_wav, segments[i]);
+    auto &masks = binarized[i];
+    auto &clean_masks = clean_segmentations[i];
+    assert(masks[0].size() == 3);
+    assert(clean_masks[0].size() == 3);
+    for (size_t j = 0; j < clean_masks[0].size(); ++j)
+    {
+      std::vector<float> used_mask;
+      float sum = 0.0;
+      std::vector<float> reversed_clean_mask(clean_masks.size());
+      std::vector<float> reversed_mask(masks.size());
+
+      for (size_t k = 0; k < clean_masks.size(); ++k)
+      {
+        sum += clean_masks[k][j];
+        reversed_clean_mask[k] = clean_masks[k][j];
+        reversed_mask[k] = masks[k][j];
+      }
+
+      if (sum > min_num_frames)
+      {
+        used_mask = std::move(reversed_clean_mask);
+      }
+      else
+      {
+        used_mask = std::move(reversed_mask);
+      }
+
+      // 将数据加入batch
+      batchData.push_back(chunkData);
+      batchMasks.push_back(std::move(used_mask));
+
+      // 达到batch大小时，进行embedding计算
+      if (batchData.size() == embedding_batch_size)
+      {
+        auto embedding = getEmbedding(speaker_id_engine, batchData, batchMasks);
+        batchData.clear();
+        batchMasks.clear();
+
+        for (auto &a : embedding)
+        {
+          embeddings.push_back(std::move(a));
+        }
+      }
+    }
+  }
+
+  // 处理剩余的数据
+  if (batchData.size() > 0)
+  {
+    auto embedding = getEmbedding(speaker_id_engine, batchData, batchMasks);
+    for (auto &a : embedding)
+    {
+      embeddings.push_back(std::move(a));
+    }
+  }
+  printf("finish embedding process, size%d\n", embeddings.size());
+  auto embeddings1 = Helper::rearrange_up(embeddings, binarized.size());
+
+  Cluster cst;
+  std::vector<std::vector<int>> hard_clusters; // output 1 for clustering
+  cst.clustering(embeddings1, binarized, hard_clusters);
+  assert(hard_clusters.size() == binarized.size());
+  assert(hard_clusters[0].size() == binarized[0][0].size());
+  std::vector<std::vector<float>> inactive_speakers(binarized.size(),
+                                                    std::vector<float>(binarized[0][0].size(), 0.0));
+  for (size_t i = 0; i < binarized.size(); ++i)
+  {
+    for (size_t j = 0; j < binarized[0].size(); ++j)
+    {
+      for (size_t k = 0; k < binarized[0][0].size(); ++k)
+      {
+        inactive_speakers[i][k] += binarized[i][j][k];
+      }
+    }
+  }
+  for (size_t i = 0; i < inactive_speakers.size(); ++i)
+  {
+    for (size_t j = 0; j < inactive_speakers[0].size(); ++j)
+    {
+      if (abs(inactive_speakers[i][j]) < std::numeric_limits<double>::epsilon())
+        hard_clusters[i][j] = -2;
+    }
+  }
+
+  SlidingWindow activations_frames;
+  auto discrete_diarization = reconstruct(segmentations, res_frames,
+                                          hard_clusters, count_data, count_frames, activations_frames);
+
+  float diarization_segmentation_min_duration_off = 0.5817029604921046; // see SegmentModel
+  auto diarization = to_annotation(discrete_diarization,
+                                   activations_frames, 0.5, 0.5, 0.0,
+                                   diarization_segmentation_min_duration_off);
+
+  std::cout << "----------------------------------------------------" << std::endl;
+  auto diaRes = diarization.finalResult();
+  for (const auto &dr : diaRes)
+  {
+    std::cout << "[" << dr.start << " -- " << dr.end << "]"
+              << " --> Speaker_" << dr.label << std::endl;
+  }
+  std::cout << "----------------------------------------------------" << std::endl;
+  // std::map<int, std::vector<Annotation::Result>> mergedResults;
+  std::vector<std::vector<float>> audioSegments;
+  mergeSegments(diaRes, input_wav, mergedResults, audioSegments, allSegment);
+  // auto merged_audio= mergeAudio(input_wav,merged_result);
+  // printf("size of merged audio %d\n", merged_audio.size());
+  return audioSegments;
+}
+
+#endif // STT_ENGINE_H

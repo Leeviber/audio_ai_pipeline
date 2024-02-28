@@ -23,6 +23,7 @@
 #include "speaker_model.h"
 #include "rknn_speaker_model.h"
 
+// #include "ai_engine.h"
 
 namespace wespeaker {
 
@@ -48,6 +49,7 @@ class SpeakerEngine {
   float CosineSimilarity(const std::vector<float>& emb1,
                         const std::vector<float>& emb2);
 
+          
  private:
   void ApplyMean(std::vector<std::vector<float>>* feats,
                  unsigned int feat_dim);
@@ -61,5 +63,6 @@ class SpeakerEngine {
 };
 
 }  // namespace wespeaker
+
 
 #endif  // SPEAKER_SPEAKER_ENGINE_H_

@@ -14,7 +14,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/frontend)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/segmentation)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/embedding)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/aivad)
-
+ 
 if(TARGET_SOC STREQUAL "rk3588")
   # rknn api
   if(TARGET_ARCH STREQUAL "arm32")
@@ -56,17 +56,19 @@ file(GLOB sherpa_sources
 add_library(sherpa-onnx-core ${sherpa_sources})
 target_link_libraries(sherpa-onnx-core onnxruntime kaldi-native-fbank-core ) 
  
+
+
 set(ai_engine_src
   ${CMAKE_CURRENT_SOURCE_DIR}/ai_engine/ai_engine.cc
 ) 
 add_library(ai_engine ${ai_engine_src})
 target_link_libraries(ai_engine sherpa-onnx-core)
-# target_include_directories(ai_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-
+ 
 add_subdirectory(speaker_id)
 set(speake_diarization_core
   ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/onnxModel/onnx_model.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/clustering/clustering.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/segmentation/speaker_seg.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diarization/embedding/speaker_embedding.cc
 
 )
@@ -200,18 +202,18 @@ if(TARGET_SOC STREQUAL "rk3588")
 else()
 
 
-  # add_executable(vad_sd_wav ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_offline_wav.cc)
-  # target_link_libraries(vad_sd_wav ai_engine alsa-core -pthread)
+  add_executable(vad_sd_wav ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_offline_wav.cc)
+  target_link_libraries(vad_sd_wav ai_engine alsa-core -pthread)
 
   # add_executable(vad_sd ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_online.cc)
   # target_link_libraries(vad_sd ai_engine alsa-core -pthread asound)
 
-  add_executable(diary_demo_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple_wav_chunk.cc)
-  target_link_libraries(diary_demo_chunk PUBLIC alsa-core sherpa-onnx-core -lboost_filesystem speaker -pthread speake_diarization)
+  # add_executable(diary_demo_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple_wav_chunk.cc)
+  # target_link_libraries(diary_demo_chunk PUBLIC alsa-core sherpa-onnx-core -lboost_filesystem speaker -pthread speake_diarization)
 
 
-  add_executable(vad_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_vad_chunk.cc)
-  target_link_libraries(vad_chunk PUBLIC alsa-core sherpa-onnx-core -lboost_filesystem speaker -pthread speake_diarization)
+  # add_executable(vad_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_vad_chunk.cc)
+  # target_link_libraries(vad_chunk PUBLIC alsa-core sherpa-onnx-core -lboost_filesystem speaker -pthread speake_diarization)
 
 
   # target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static)
@@ -237,11 +239,11 @@ else()
   # add_executable(change_id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change_id_base.cc)
   # target_link_libraries(change_id_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
  
-  add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
-  target_link_libraries(diary_demo PUBLIC -pthread speaker speake_diarization onnxruntime)
+  # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
+  # target_link_libraries(diary_demo PUBLIC -pthread speaker speake_diarization onnxruntime)
 
-  add_executable(segment_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_segment_chunk.cc)
-  target_link_libraries(segment_chunk PUBLIC -pthread speaker -lboost_filesystem speake_diarization onnxruntime)
+  # add_executable(segment_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_segment_chunk.cc)
+  # target_link_libraries(segment_chunk PUBLIC -pthread speaker -lboost_filesystem speake_diarization onnxruntime)
 
   # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
   # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core speaker -pthread speake_diarization)
@@ -255,15 +257,15 @@ else()
 
   install(
     TARGETS
-    # vad_sd_wav
+    vad_sd_wav
     # vad_sd
-    diary_demo_chunk
-    vad_chunk
+    # diary_demo_chunk
+    # vad_chunk
     # vad_stt
     # vad_sd
     # id_demo
-    segment_chunk
-    diary_demo
+    # segment_chunk
+    # diary_demo
     # diary_demo_simple
     # change_demo
     # change_id_demo

@@ -23,6 +23,7 @@
 #include "speaker/onnx_speaker_model.h"
 #include "speaker/rknn_speaker_model.h"
 
+ 
 
 namespace wespeaker {
 
@@ -192,4 +193,6 @@ float SpeakerEngine::CosineSimilarity(const std::vector<float>& emb1,
   return dot;
 }
 
+
 }  // namespace wespeaker
+
