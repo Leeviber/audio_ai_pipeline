@@ -19,6 +19,8 @@
 #include "speaker_id/speaker/onnx_speaker_model.h"
 
 #include "speaker_diarization/speaker_diarization.h"
+
+ 
 struct Diarization
 {
     int id;
@@ -127,11 +129,12 @@ public:
     void saveSTTAnnotation(std::string fileName, double start, double end, const std::string &text, bool appendToFile = false);
 
     void saveDiarizationsAnnotation(std::string fileName, bool sequence, bool appendToFile);
+    int file_count = 0;
 
 private:
     int sampleRate = 16000;
 
-    float min_segment_length = 1.5;
+    float min_segment_length = 0.5;
 
     std::unique_ptr<sherpa_onnx::VoiceActivityDetector> vad_;
 
@@ -142,6 +145,8 @@ private:
     bool dumpOutput;
 
     std::string fileName;
+
+
 };
 
 #endif // STT_ENGINE_H

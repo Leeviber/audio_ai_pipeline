@@ -157,7 +157,7 @@ int main()
     model_paths.push_back(onnx_model_path); 
 
 #else
-    std::string onnx_model_path = "./bin/voxceleb_resnet152_LM.onnx";
+    std::string onnx_model_path = "./bin/voxceleb_resnet34_LM.onnx";
     // std::string onnx_model_path = "./bin/voxceleb_CAM++_LM.onnx";
 
     model_paths.push_back(onnx_model_path);
@@ -185,23 +185,24 @@ int main()
     int32_t vad_activate_sample = (16000 * 500) / 1000;
     int32_t vad_silence_sample = (16000 * 0) / 1000;
 
-    std::string path = "./bin/silero_vad.onnx";
-    int test_sr = 16000;
-    int test_frame_ms = 96;
-    float test_threshold = 0.85f;
-    int test_min_silence_duration_ms = 200;
-    int test_speech_pad_ms = 0;
-    int test_window_samples = test_frame_ms * (test_sr / 1000);
+    std::string vad_model_path = "./bin/silero_vad.onnx";
+    int vad_sample_rate = 16000;
+    int vad_frame_ms = 64;
+    float vad_threshold = 0.8f;
+    int vad_min_silence_duration_ms = 100;
+    int vad_speech_pad_ms = 0;
+    int test_window_samples = vad_frame_ms * (vad_sample_rate / 1000);
 
-    VadIterator ai_vad(
-        path, test_sr, test_frame_ms, test_threshold,
-        test_min_silence_duration_ms, test_speech_pad_ms);
+    VadIterator ai_vad(vad_model_path,vad_frame_ms,vad_threshold,vad_min_silence_duration_ms);
+ 
+
+        
 
     ///////////////////////////////////////////////////////
 
     //// Init Sherpa STT module //////////
 
-    std::string tokens = "./bin/tokens.txt";
+    std::string tokens = "./bin/encoder-epoch-30-avg-4-tokens.txt";
     std::string encoder_filename = "./bin/encoder-epoch-30-avg-4.int8.onnx";
     std::string decoder_filename = "./bin/decoder-epoch-30-avg-4.int8.onnx";
     std::string joiner_filename = "./bin/joiner-epoch-30-avg-4.int8.onnx";
@@ -229,7 +230,7 @@ int main()
     ////////////////////////////////////////////////////
 
     ///////////////// READ and Wrirte WAV /////////////////////////
-    std::string audio_path = "./bin/team_talk_chinese.wav";
+    std::string audio_path = "./bin/multi-speaker_1min.wav";
     auto data_reader = wenet::ReadAudioFile(audio_path);
     int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
     int samples = data_reader->num_sample();

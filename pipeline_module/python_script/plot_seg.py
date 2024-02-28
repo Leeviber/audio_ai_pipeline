@@ -12,9 +12,9 @@ def plot_one_dim_array_from_binary(filename):
 
 # 读取二进制文件并转换为 numpy 数组
 data = np.fromfile('binarized.bin', dtype=np.float64)
-reshaped_data = data.reshape((113,293, 3))
+reshaped_data = data.reshape((9,293, 3))
 
-# 创建一个包含三个图表的 subplot
+# # 创建一个包含三个图表的 subplot
 fig, axs = plt.subplots(3, 1, figsize=(10, 18))
 
 # 第一个图表：画出每个说话者的均值数据

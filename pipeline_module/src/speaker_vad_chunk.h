@@ -1,5 +1,5 @@
-#ifndef SPEAKER_DIARY
-#define SPEAKER_DIARY
+#ifndef SPEAKER_DIARY_SIMPLE
+#define SPEAKER_DIARY_SIMPLE
 
 #include <iostream>
 #include <fstream>
@@ -13,6 +13,5 @@
 #include <cmath>
 #include <math.h>
 
-#include "speaker_diarization/speaker_diarization.h"
- 
+
 #endif

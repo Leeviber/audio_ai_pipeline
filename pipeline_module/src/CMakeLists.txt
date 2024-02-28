@@ -165,6 +165,9 @@ if(TARGET_SOC STREQUAL "rk3588")
  
   # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
   # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
+  
+  add_executable(diary_demo_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple_wav_chunk.cc)
+  target_link_libraries(diary_demo_chunk PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
 
 
   # add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_track.cc)
@@ -183,6 +186,7 @@ if(TARGET_SOC STREQUAL "rk3588")
     # kws_stt
     vad_stt
     vad_sd
+    diary_demo_chunk
     # vad_stt_tts
     # id_demo
     # diary_demo
@@ -194,15 +198,31 @@ if(TARGET_SOC STREQUAL "rk3588")
   )
 
 else()
+
+
+  # add_executable(vad_sd_wav ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_offline_wav.cc)
+  # target_link_libraries(vad_sd_wav ai_engine alsa-core -pthread)
+
+  # add_executable(vad_sd ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_online.cc)
+  # target_link_libraries(vad_sd ai_engine alsa-core -pthread asound)
+
+  add_executable(diary_demo_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple_wav_chunk.cc)
+  target_link_libraries(diary_demo_chunk PUBLIC alsa-core sherpa-onnx-core -lboost_filesystem speaker -pthread speake_diarization)
+
+
+  add_executable(vad_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_vad_chunk.cc)
+  target_link_libraries(vad_chunk PUBLIC alsa-core sherpa-onnx-core -lboost_filesystem speaker -pthread speake_diarization)
+
+
   # target_link_libraries(sherpa-onnx-core kaldi-native-fbank-core sentencepiece-static)
   # target_link_libraries(sherpa-onnx-core onnxruntime)
 
-  add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
-  target_link_libraries(vad_stt ai_engine alsa-core -pthread asound)
+  # add_executable(vad_stt ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_online.cc)
+  # target_link_libraries(vad_stt ai_engine alsa-core -pthread asound)
 
  
-  add_executable(vad_sd ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_online.cc)
-  target_link_libraries(vad_sd ai_engine alsa-core -pthread asound)
+  # add_executable(vad_sd ${CMAKE_CURRENT_SOURCE_DIR}/vad_speaker_diarization_online.cc)
+  # target_link_libraries(vad_sd ai_engine alsa-core -pthread asound)
 
   # add_executable(vad_stt_tts ${CMAKE_CURRENT_SOURCE_DIR}/vad_stt_tts.cc)
   # target_link_libraries(vad_stt_tts sherpa-onnx-core litevad alsa-core -pthread tts_core -lespeak-ng -lasound onnxruntime)
@@ -217,11 +237,14 @@ else()
   # add_executable(change_id_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change_id_base.cc)
   # target_link_libraries(change_id_demo PUBLIC alsa-core litevad -lasound -pthread speaker)
  
-  # add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
-  # target_link_libraries(diary_demo PUBLIC -pthread litevad speaker speake_diarization onnxruntime)
+  add_executable(diary_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary.cc)
+  target_link_libraries(diary_demo PUBLIC -pthread speaker speake_diarization onnxruntime)
+
+  add_executable(segment_chunk ${CMAKE_CURRENT_SOURCE_DIR}/speaker_segment_chunk.cc)
+  target_link_libraries(segment_chunk PUBLIC -pthread speaker -lboost_filesystem speake_diarization onnxruntime)
 
   # add_executable(diary_demo_simple ${CMAKE_CURRENT_SOURCE_DIR}/speaker_diary_simple.cc)
-  # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core litevad speaker -pthread speake_diarization)
+  # target_link_libraries(diary_demo_simple PUBLIC alsa-core sherpa-onnx-core speaker -pthread speake_diarization)
  
   # add_executable(change_demo ${CMAKE_CURRENT_SOURCE_DIR}/speaker_change.cc)
   # target_link_libraries(change_demo PUBLIC alsa-core -lasound -pthread speaker speake_diarization)
@@ -232,10 +255,15 @@ else()
 
   install(
     TARGETS
-    vad_stt
-    vad_sd
+    # vad_sd_wav
+    # vad_sd
+    diary_demo_chunk
+    vad_chunk
+    # vad_stt
+    # vad_sd
     # id_demo
-    # diary_demo
+    segment_chunk
+    diary_demo
     # diary_demo_simple
     # change_demo
     # change_id_demo

@@ -1,21 +1,21 @@
 #include "alsa_cq_buffer.h"      // ALSA
 #include "ai_engine/ai_engine.h" // AI audio engine
-
+#include "speaker_id/frontend/wav.h"
 int main()
 {
 
   //// Init ALSA and circular buffer////
   online_params params;
 
-  int32_t ret = init_online_audio(&params);
-  if (ret < 0)
-  {
-    fprintf(stderr, "Error init_kws \n");
-    return -1;
-  }
-  snd_pcm_t *capture_handle;
-  const char *device_name = "plughw:2,0"; // using arecord -l to checkout the alsa device name
-  ret = audio_CQ_init(device_name, params.sample_rate, &params, capture_handle);
+  // int32_t ret = init_online_audio(&params);
+  // if (ret < 0)
+  // {
+  //   fprintf(stderr, "Error init_kws \n");
+  //   return -1;
+  // }
+  // snd_pcm_t *capture_handle;
+  // const char *device_name = "plughw:2,0"; // using arecord -l to checkout the alsa device name
+  // ret = audio_CQ_init(device_name, params.sample_rate, &params, capture_handle);
   //////////////////////////////////////
 
   //// Init Sherpa STT module //////////
@@ -29,7 +29,7 @@ int main()
   int vad_frame_ms = 96; // audio chunk length(ms) for VAD detect, (32,64,96), large is more accuray with more latency
   std::string vad_path = "./bin/silero_vad.onnx";
   float min_silence_duration = 0.1;
-  float vad_threshold = 0.85;
+  float vad_threshold = 0.65;
   bool saveAnanotation = true;
   std::string filename = "diarization_output.txt";
 
@@ -65,23 +65,56 @@ int main()
   printf("Init success\n");
   //// Main loop for audio real time process //////
   //////////////////////////////////////
-
-  while (params.is_running)
+  std::string audio_path = "./bin/output.wav";
+  auto data_reader = wenet::ReadAudioFile(audio_path);
+  int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
+  int samples = data_reader->num_sample();
+  std::vector<float> enroll_data_flt32(samples);
+  for (int i = 0; i < samples; i++)
   {
+      enroll_data_flt32[i] = static_cast<float>(enroll_data_int16[i]) / 32768;
+  }
 
+  std::string path = "./bin/silero_vad.onnx";
+  int test_sr = 16000;
+  int test_frame_ms = 96;
+    int test_window_samples = test_frame_ms * (test_sr / 1000);
+
+
+  // 记录开始时间
+  auto start = std::chrono::high_resolution_clock::now();
+
+  // 计算音频数据块的数量
+  int audio_chunk = samples / test_window_samples;
+
+  for (int j = 0; j < audio_chunk; j++)
+  {
     while (true)
     {
-      int len = audio_CQ_get(&params, vad_frame_ms, 0); // The audio windows for ai vad is 64ms
-     
-      if (len >= vad_frame_ms/1000*params.sample_rate)
-      {
-        vad_chunk_stt.PushAudioChunk(params.audio.pcmf32_new);  
-        break;
-      }
+      std::vector<float> window_chunk{&enroll_data_flt32[0] + j * test_window_samples, &enroll_data_flt32[0] + j * test_window_samples + test_window_samples};
+      vad_chunk_stt.PushAudioChunk(window_chunk);
+      break;  
     }
-
     vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
+    
   }
+
+  // while (params.is_running)
+  // {
+
+  //   while (true)
+  //   {
+  //     int len = audio_CQ_get(&params, vad_frame_ms, 0); // The audio windows for ai vad is 64ms
+     
+  //     if (len >= vad_frame_ms/1000*params.sample_rate)
+  //     {
+  //       vad_chunk_stt.PushAudioChunk(params.audio.pcmf32_new);  
+  //       break;
+  //     }
+  //   }
+
+  //   vad_chunk_stt.SpeakerDiarization(&stt_interface, &speaker_id, &cluster);
+  // }
 
   ///////////////////////////////////////////
   return 0;

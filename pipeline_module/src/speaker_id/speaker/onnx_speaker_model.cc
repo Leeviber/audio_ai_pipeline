@@ -43,23 +43,37 @@ OnnxSpeakerModel::OnnxSpeakerModel(const std::string& model_path) {
                                                       session_options_);
   // 2. Model info
   Ort::AllocatorWithDefaultOptions allocator;
+
+  
   // 2.1. input info
   int num_nodes = speaker_session_->GetInputCount();
   // NOTE(cdliang): for speaker model, num_nodes is 1.
   // CHECK_EQ(num_nodes, 1);
   input_names_.resize(num_nodes);
+  Ort::AllocatedStringPtr input_name_Ptr = speaker_session_->GetInputNameAllocated(0, allocator);
+  for (int i = 0; i < num_nodes; ++i) {
+      //input_node_names_[i] = session_->GetInputName(i, allocator); // onnx verion 1.20
+      auto name_ptr = speaker_session_->GetInputNameAllocated(i, allocator); // onnx version 1.41
+      auto ptr = name_ptr.get();
+      char* tmp = new char[strlen( ptr ) + 1]; // TODO: release this memory
+      strcpy( tmp, ptr );
+      input_names_[i] = tmp; // name_ptr.get();
+   }
  
-  char * name="feats";
-  input_names_[0] = name;
-  // LOG(INFO) << "input name: " << name;
-
+ 
   // 2.2. output info
   num_nodes = speaker_session_->GetOutputCount();
   // CHECK_EQ(num_nodes, 1);
   output_names_.resize(num_nodes);
-  name="embs";
-  output_names_[0] = name;
-  // LOG(INFO) << "Output name: " << name;
+  for (int i = 0; i < num_nodes; ++i) {
+      //output_node_names_[i] = session_->GetOutputName(i, allocator);
+      auto name_ptr = speaker_session_->GetOutputNameAllocated(i, allocator);
+      auto ptr = name_ptr.get();
+      char* tmp = new char[strlen( ptr ) + 1]; // TODO: release this memory
+      strcpy( tmp, ptr );
+      output_names_[i] = tmp;
+  }
+  
 }
 void saveArrayToBinaryFile(const std::vector<float>& array, const std::string& filename) {
     static int count = 1; // 添加静态变量用于文件名的递增

@@ -18,9 +18,11 @@ class Cluster
 private:
     // Those 2 values extracted from config.yaml under
     // ~/.cache/torch/pyannote/models--pyannote--speaker-diarization/snapshots/xxx/
-    float m_threshold = 0.8853814381597874;
+    // float m_threshold = 0.88153814381597874;
+    float m_threshold = 0.7153814381597874;
+
     size_t m_min_cluster_size = 15;
-    float distance_threshold = 0.7; // larger is relax
+    float distance_threshold = 0.8; // larger is relax
 
 public:
     Cluster()
@@ -41,9 +43,12 @@ public:
         // python: train_embeddings, train_chunk_idx, train_speaker_idx = self.filter_embeddings
         std::vector<int> chunk_idx;
         std::vector<int> speaker_idx;
+  
         auto filteredEmbeddings = filter_embeddings(embeddings, chunk_idx, speaker_idx);
 
         size_t num_embeddings = filteredEmbeddings.size();
+
+ 
         set_num_clusters(static_cast<int>(num_embeddings), num_clusters, min_clusters, max_clusters);
 
         // do NOT apply clustering when min_clusters = max_clusters = 1
@@ -275,7 +280,9 @@ public:
         // (0.1 value is kind of arbitrary, though)
         // m_min_cluster_size = std::min( m_min_cluster_size, std::max(static_cast<size_t>( 1 ),
         //             static_cast<size_t>( round(0.1 * num_embeddings))));
-        m_min_cluster_size = 1;
+        // printf("m_min_cluster_size %d",m_min_cluster_size);
+
+        m_min_cluster_size = 2;
         // printf("m_min_cluster_size%d",m_min_cluster_size);
         // linkage function will complain when there is just one embedding to cluster
         // if( num_embeddings == 1 )
@@ -319,8 +326,7 @@ public:
                 small_clusters.push_back(entry.first);
             }
         }
-        // printf("large_clusters.size()%d\n",large_clusters.size());
-        // printf("small_clusters.size()%d\n",small_clusters.size());
+ 
 
         size_t num_large_clusters = large_clusters.size();
 
@@ -370,7 +376,7 @@ public:
             // np.argmin
             for (size_t i = 0; i < centroids_cdist.size(); ++i)
             {
-                // if (centroids_cdist[i][small_k] < minVal) {
+                // if (centroids_cdist[i][small_k] < minVal) 
                 if (centroids_cdist[i][small_k] < minVal && centroids_cdist[i][small_k] < distance_threshold)
                 {
 

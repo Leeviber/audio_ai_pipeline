@@ -19,8 +19,8 @@ add_subdirectory(frontend)
 
 
 
-# set(speaker_srcs
-#   ${CMAKE_CURRENT_SOURCE_DIR}/speaker/speaker_engine.cc)
+set(speaker_srcs
+  ${CMAKE_CURRENT_SOURCE_DIR}/speaker/speaker_engine.cc)
 
  
 list(APPEND speaker_srcs

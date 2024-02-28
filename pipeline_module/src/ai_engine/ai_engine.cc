@@ -1,5 +1,59 @@
 #include "ai_engine.h"
 
+
+
+// WAV 文件头结构
+struct WavHeader
+{
+    char chunkId[4];
+    uint32_t chunkSize;
+    char format[4];
+    char subchunk1Id[4];
+    uint32_t subchunk1Size;
+    uint16_t audioFormat;
+    uint16_t numChannels;
+    uint32_t sampleRate;
+    uint32_t byteRate;
+    uint16_t blockAlign;
+    uint16_t bitsPerSample;
+    char subchunk2Id[4];
+    uint32_t subchunk2Size;
+};
+
+// 保存 WAV 文件
+void saveWavFile(const std::string &filename, const std::vector<int16_t> &data, uint16_t numChannels, uint32_t sampleRate, uint16_t bitsPerSample)
+{
+    std::ofstream file(filename, std::ios::binary);
+
+    // 创建 WAV 文件头
+    WavHeader header;
+    strncpy(header.chunkId, "RIFF", 4);
+    header.chunkSize = data.size() * sizeof(int16_t) + sizeof(WavHeader) - 8;
+    strncpy(header.format, "WAVE", 4);
+    strncpy(header.subchunk1Id, "fmt ", 4);
+    header.subchunk1Size = 16;
+    header.audioFormat = 1;
+    header.numChannels = numChannels;
+    header.sampleRate = sampleRate;
+    header.bitsPerSample = bitsPerSample;
+    header.byteRate = sampleRate * numChannels * bitsPerSample / 8;
+    header.blockAlign = numChannels * bitsPerSample / 8;
+    strncpy(header.subchunk2Id, "data", 4);
+    header.subchunk2Size = data.size() * sizeof(int16_t);
+
+    // 写入文件头
+    file.write(reinterpret_cast<const char *>(&header), sizeof(WavHeader));
+
+    // 写入音频数据
+    file.write(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(int16_t));
+
+    // 关闭文件
+    file.close();
+
+    std::cout << "WAV 文件保存成功：" << filename << std::endl;
+}
+
+
 STTEngine::STTEngine(bool using_whisper, bool using_chinese)
 {
   std::string tokens;
@@ -126,12 +180,18 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
 
     auto &segment = vad_->Front();
     int segment_length = segment.samples.size();
+    std::string basePath = "test_audio/new_sd_audio_output/";
+    std::string prefix = "audio";
+    std::string fileExtension = ".wav";
 
-    if (segment_length < min_segment_length * sampleRate)
-    {
-      vad_->Pop();
-      return;
-    }
+    std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
+    file_count += 1;
+    // if (segment_length < min_segment_length * sampleRate)
+    // {
+    //   printf("\n vad pop \n");
+    //   vad_->Pop();
+    //   return;
+    // }
 
     float start = (float)segment.start / sampleRate;
     float end = (float)(segment.start + segment_length) / sampleRate;
@@ -143,6 +203,8 @@ void VADChunk::SpeakerDiarization(STTEngine *stt_interface, SpeakerID *speaker_i
     {
       enroll_data_int16[i] = static_cast<int16_t>(segment.samples[i] * 32767.0f);
     }
+    saveWavFile(filename, enroll_data_int16, 1, 16000, 16);
+
     std::vector<float> chunk_emb(speaker_id_engine->EmbeddingSize(), 0);
 
     speaker_id_engine->ExtractEmbedding(enroll_data_int16.data(), enroll_data_int16.size(), &chunk_emb);

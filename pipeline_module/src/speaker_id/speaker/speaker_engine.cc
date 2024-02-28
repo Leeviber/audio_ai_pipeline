@@ -90,7 +90,6 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
     std::vector<std::vector<float>> chunk_feat;
     feature_pipeline_->AcceptWaveform(std::vector<int16_t>(
         data, data + data_size));
-    printf("per_chunk_samples_%d\n",per_chunk_samples_);
     if (per_chunk_samples_ <= 0) {
       // full mode
       feature_pipeline_->Read(feature_pipeline_->num_frames(), &chunk_feat);
@@ -102,13 +101,11 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
       int num_chunk_frames_ = 1 + ((
         per_chunk_samples_ - sample_rate_ / 1000 * 25) /
         (sample_rate_ / 1000 * 10));
-     printf("num_chunk_frames_%d\n",num_chunk_frames_);
-
+ 
       int chunk_num = std::ceil( 
         feature_pipeline_->num_frames() / num_chunk_frames_);
 
-      printf("chunk_num%d\n",chunk_num);
-
+ 
       chunks_feat->reserve(chunk_num);
       chunk_feat.reserve(num_chunk_frames_);
       while (feature_pipeline_->NumQueuedFrames() >= num_chunk_frames_) {
@@ -118,8 +115,7 @@ void SpeakerEngine::ExtractFeature(const int16_t* data, int data_size,
       }
       // last_chunk
       int last_frames = feature_pipeline_->NumQueuedFrames();
-      printf("last_frames%d\n",last_frames);
-
+ 
       if (last_frames > 0) {
         feature_pipeline_->Read(last_frames, &chunk_feat);
         if (chunks_feat->empty()) {
