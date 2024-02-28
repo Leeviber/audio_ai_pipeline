@@ -20,7 +20,7 @@ int main()
 
   //// Init Sherpa STT module //////////
   bool using_Whisper = false;  // English only
-  bool using_Chinese = true; // Not support whipser
+  bool using_Chinese = false; // Not support whipser
   STTEngine stt_interface(using_Whisper, using_Chinese);
   //////////////////////////////////////
 
@@ -74,7 +74,7 @@ int main()
   printf("Init success\n");
   //// Main loop for audio real time process //////
   //////////////////////////////////////
-  std::string audio_path = "./bin/speaker_diarization_long_test/8speaker.wav";
+  std::string audio_path = "./bin/speaker_diarization_long_test/meeting_audio_1.wav";
   auto data_reader = wenet::ReadAudioFile(audio_path);
   int16_t *enroll_data_int16 = const_cast<int16_t *>(data_reader->data());
   int samples = data_reader->num_sample();

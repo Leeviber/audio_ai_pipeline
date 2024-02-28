@@ -256,7 +256,7 @@ void VADChunk::SpeakerDiarization(SegmentModel *mm, STTEngine *stt_interface, Sp
 
         std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
         file_count += 1;
-        saveWavFile(filename, floatToShort(audio_chunk[i]), 1, 16000, 16);
+        // saveWavFile(filename, floatToShort(audio_chunk[i]), 1, 16000, 16);
 
 
       }
@@ -282,7 +282,7 @@ void VADChunk::SpeakerDiarization(SegmentModel *mm, STTEngine *stt_interface, Sp
 
       std::string filename = basePath + prefix + std::to_string(file_count) + fileExtension;
       file_count += 1;
-      saveWavFile(filename, enroll_data_int16, 1, 16000, 16);
+      // saveWavFile(filename, enroll_data_int16, 1, 16000, 16);
       std::cout << "Skipping segment...\n";
     }
 
